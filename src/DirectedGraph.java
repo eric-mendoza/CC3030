@@ -1,5 +1,6 @@
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 /**
  * La presente clase tiene como objetivo simular a un automata. Lo que se realizo fue modificar una clase para grafos
@@ -45,6 +46,8 @@ public class DirectedGraph {
          */
         public NodeClass(int name, boolean isStart, boolean isFinal){
             id = name;
+            if (isStart) nodeInitialMap.put(id, this);  // Agregar a listado de inicios de automata
+            if (isFinal) nodeFinalMap.put(id, this);  // Agregar a listado de finales de automata
             this.Final = isFinal;
             this.Start = isStart;
             edges = new HashSet<DirectedGraph.edgeContents>();
@@ -242,15 +245,8 @@ public class DirectedGraph {
      * @return nodo inicial
      */
     public NodeClass getInicialNode(){
-        HashSet<DirectedGraph.NodeClass> nodos = getAllNodes();
-        for (DirectedGraph.NodeClass i: nodos) {
-            // Buscar el nodo inicial
-            if (i.isStart()){
-                return i;
-            }
-        }
-
-        return null;  // No deberia ocurrir
+        Map.Entry<Integer, NodeClass> entry = nodeInitialMap.entrySet().iterator().next();
+        return entry.getValue();
     }
 
     /**
@@ -258,15 +254,8 @@ public class DirectedGraph {
      * @return nodo final
      */
     public NodeClass getFinalNode(){
-        HashSet<DirectedGraph.NodeClass> nodos = getAllNodes();
-        for (DirectedGraph.NodeClass i: nodos) {
-            // Buscar el nodo inicial
-            if (i.isFinal()){
-                return i;
-            }
-        }
-
-        return null;  // No deberia ocurrir
+        Map.Entry<Integer, NodeClass> entry = nodeFinalMap.entrySet().iterator().next();
+        return entry.getValue();
     }
 
     /**
