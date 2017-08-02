@@ -109,15 +109,43 @@ public class RegExEvaluator {
 
     /**
      * Realiza la operacion '?' de un automata
-     * @param a automata a aplicar operacion
+     * @param op1 automata a aplicar operacion
      * @return nuevo automata
      */
-    private static DirectedGraph qMarkGraphs(DirectedGraph a){
-        DirectedGraph result, epsilon;
-        epsilon = createSimpleGraph("!");
-        result = orGraphs(a, epsilon);
+    private static DirectedGraph qMarkGraphs(DirectedGraph op1){
+        // Variables a utilizar
+        DirectedGraph.NodeClass nodoInicialViejo, nodoFinalViejo, nodoInicialNuevo, nodoFinalNuevo;
 
-        return result;
+        // Agregar transicion desde final anterior a inicio anterior
+        nodoFinalViejo = op1.getFinalNode();
+        nodoInicialViejo = op1.getInicialNode();
+
+        // Crear nodo inicial nuevo, eliminar anterior y agregar transiciones epsilon
+        int nuevoID = getStateCounter();  // Nombre de nuevo nodo inicial
+        op1.addNode(op1, nuevoID, false, false);  // Agregar nuevo nodo final sin marca de ser final
+        nodoInicialNuevo = op1.getParticularNode(nuevoID);  // Obtener nodo inicial nuevo
+
+        op1.addEdges(op1, nodoInicialNuevo, nodoInicialViejo, "!");  // Agregar nueva transicion
+
+        nodoInicialViejo.setStart(false);  // Eliminar bandera de nodo inicial en nodo viejo
+        nodoInicialNuevo.setStart(true);  // Agregar bandera de nodo inicial
+        setStateCounter(nuevoID + 1);  // Cambiar conteo de estados
+
+        // Crear nodo final nuevo, eliminar anteriores y agregar transiciones epsilon
+        nuevoID = getStateCounter();  // Nombre de nuevo nodo final
+        op1.addNode(op1, nuevoID, false, false);  // Agregar nuevo nodo final sin marca
+        nodoFinalNuevo = op1.getParticularNode(nuevoID);
+
+        op1.addEdges(op1, nodoFinalViejo, nodoFinalNuevo, "!");  // Agregar nueva transicion
+
+        nodoFinalViejo.setFinal(false);  // Eliminar bandera de nodo final en nodo viejo
+        nodoFinalNuevo.setFinal(true);  // Agregar bandera de nodo final
+        setStateCounter(nuevoID + 1);  // Cambiar conteo de estados
+
+        // Crear transicion entre nuevos estados final e inicial
+        op1.addEdges(op1, nodoInicialNuevo, nodoFinalNuevo, "!");
+
+        return op1;
     }
 
 
@@ -361,7 +389,7 @@ public class RegExEvaluator {
 
         // Copiar cada transicion a copia automata 1
         for (DirectedGraph.edgeContents i: edges2) {
-            a2.addEdges(a2, i.getStartingNode(), i.getFinishingNode(), i.getTransition());
+            a2.addEdges(a2, i.getStartingNode(), i.getFinishingNode(), i.getTransition());  // AQUI HAY ERROES DE REFERENCIAS
         }
 
         // Cambiar numeros y adaptar transiciones

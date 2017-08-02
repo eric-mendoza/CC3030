@@ -14,7 +14,7 @@ public class Main {
         /**
          * Normaliza la expresion a evaluar y la convierte a postfix
          */
-        String regex = RegExConverter.infixToPostfix("a+");
+        String regex = RegExConverter.infixToPostfix("a?a");
         //System.out.println(regex);
 
         /**
