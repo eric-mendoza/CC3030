@@ -31,7 +31,7 @@ public class Main {
         /**
          * Mostrar en pantalla el automata generado
          */
-        //AutomataRenderer.renderAutomata(nfa);
+        AutomataRenderer.renderAutomata(nfa);
 
         /**
          * Ultimo tiempo

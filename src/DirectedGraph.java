@@ -62,11 +62,16 @@ public class DirectedGraph {
         }
 
         /**
-         * Se utiliza para cambiar el estado final
+         * Se utiliza para cambiar el estado de si es el estado final del automata
          * @param aFinal es el nuevo estado del atributo
          */
         public void setFinal(boolean aFinal) {
             Final = aFinal;
+            if (aFinal){
+                nodeFinalMap.put(getId(), this);
+            } else {
+                nodeFinalMap.remove(getId());
+            }
         }
 
         /**
@@ -83,6 +88,11 @@ public class DirectedGraph {
          */
         public void setStart(boolean start) {
             Start = start;
+            if (start){
+                nodeInitialMap.put(this.getId(), this);
+            } else {
+                nodeInitialMap.remove(getId());
+            }
         }
 
         /**
@@ -142,6 +152,7 @@ public class DirectedGraph {
 
         public void setStartingNode(NodeClass startingNode) {
             this.startingNode = startingNode;
+
         }
 
         public String getTransition() {
@@ -330,4 +341,19 @@ public class DirectedGraph {
         return resultNodos + resultEdges;
     }
 
+    public HashMap<Integer, NodeClass> getNodeFinalMap() {
+        return nodeFinalMap;
+    }
+
+    public void setNodeFinalMap(HashMap<Integer, NodeClass> nodeFinalMap) {
+        this.nodeFinalMap = nodeFinalMap;
+    }
+
+    public HashMap<Integer, NodeClass> getNodeInitialMap() {
+        return nodeInitialMap;
+    }
+
+    public void setNodeInitialMap(HashMap<Integer, NodeClass> nodeInitialMap) {
+        this.nodeInitialMap = nodeInitialMap;
+    }
 }

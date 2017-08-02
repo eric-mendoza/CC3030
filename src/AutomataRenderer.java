@@ -7,6 +7,7 @@ import edu.uci.ics.jung.visualization.BasicVisualizationServer;
 import edu.uci.ics.jung.visualization.VisualizationViewer;
 import edu.uci.ics.jung.visualization.control.DefaultModalGraphMouse;
 import edu.uci.ics.jung.visualization.control.ModalGraphMouse;
+import edu.uci.ics.jung.visualization.decorators.EdgeShape;
 import edu.uci.ics.jung.visualization.decorators.ToStringLabeller;
 import edu.uci.ics.jung.visualization.renderers.*;
 import edu.uci.ics.jung.visualization.renderers.Renderer;
@@ -57,6 +58,8 @@ public class AutomataRenderer {
         DefaultModalGraphMouse gm = new DefaultModalGraphMouse();
         gm.setMode(ModalGraphMouse.Mode.TRANSFORMING);
         vv.setGraphMouse(gm);
+        vv.getRenderContext().setEdgeShapeTransformer(
+                new EdgeShape.Line<Integer,String>());
 
         /**
          * Agregar todo a la gui

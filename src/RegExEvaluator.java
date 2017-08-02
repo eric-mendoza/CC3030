@@ -127,29 +127,38 @@ public class RegExEvaluator {
      * @return nuevo automata
      */
     private static DirectedGraph starGraphs(DirectedGraph op1){
+        // Variables a utilizar
+        DirectedGraph.NodeClass nodoInicialViejo, nodoFinalViejo, nodoInicialNuevo, nodoFinalNuevo;
+
         // Agregar transicion desde final anterior a inicio anterior
-        op1.addEdges(op1, op1.getFinalNode(), op1.getInicialNode(), "!");
+        nodoFinalViejo = op1.getFinalNode();
+        nodoInicialViejo = op1.getInicialNode();
+        op1.addEdges(op1, nodoFinalViejo, nodoInicialViejo, "!");
 
         // Crear nodo inicial nuevo, eliminar anterior y agregar transiciones epsilon
         int nuevoID = getStateCounter();  // Nombre de nuevo nodo inicial
         op1.addNode(op1, nuevoID, false, false);  // Agregar nuevo nodo final sin marca de ser final
-        DirectedGraph.NodeClass nodoInicialViejo = op1.getInicialNode();  // Obtener nodos inicial anterior
-        op1.addEdges(op1, op1.getParticularNode(nuevoID), nodoInicialViejo, "!");  // Agregar nueva transicion
+        nodoInicialNuevo = op1.getParticularNode(nuevoID);  // Obtener nodo inicial nuevo
+
+        op1.addEdges(op1, nodoInicialNuevo, nodoInicialViejo, "!");  // Agregar nueva transicion
+
         nodoInicialViejo.setStart(false);  // Eliminar bandera de nodo inicial en nodo viejo
-        op1.getParticularNode(nuevoID).setStart(true);  // Agregar bandera de nodo inicial
+        nodoInicialNuevo.setStart(true);  // Agregar bandera de nodo inicial
         setStateCounter(nuevoID + 1);  // Cambiar conteo de estados
 
         // Crear nodo final nuevo, eliminar anteriores y agregar transiciones epsilon
         nuevoID = getStateCounter();  // Nombre de nuevo nodo final
         op1.addNode(op1, nuevoID, false, false);  // Agregar nuevo nodo final sin marca
-        DirectedGraph.NodeClass nodoFinalViejo = op1.getFinalNode();  // Obtener nodo final anterior
-        op1.addEdges(op1, nodoFinalViejo, op1.getParticularNode(nuevoID), "!");  // Agregar nueva transicion
+        nodoFinalNuevo = op1.getParticularNode(nuevoID);
+
+        op1.addEdges(op1, nodoFinalViejo, nodoFinalNuevo, "!");  // Agregar nueva transicion
+
         nodoFinalViejo.setFinal(false);  // Eliminar bandera de nodo final en nodo viejo
-        op1.getParticularNode(nuevoID).setFinal(true);  // Agregar bandera de nodo final
+        nodoFinalNuevo.setFinal(true);  // Agregar bandera de nodo final
         setStateCounter(nuevoID + 1);  // Cambiar conteo de estados
 
         // Crear transicion entre nuevos estados final e inicial
-        op1.addEdges(op1, op1.getInicialNode(), op1.getFinalNode(), "!");
+        op1.addEdges(op1, nodoInicialNuevo, nodoFinalNuevo, "!");
         return op1;
     }
 
@@ -161,13 +170,14 @@ public class RegExEvaluator {
      * @return nuevo automata
      */
     private static DirectedGraph concatenateGraphs(DirectedGraph op1, DirectedGraph op2){
-        // Obtener nodos de segundo automata
+        // Obtener nodos de segundo automata 2
         HashSet<DirectedGraph.NodeClass> nodos2 = op2.getAllNodes();
 
         // Obtener transiciones automata 2
         HashSet<DirectedGraph.edgeContents> edges2 = op2.getEdges();
 
-        DirectedGraph.NodeClass op1FinalNode = op1.getFinalNode();  // Obtener nodo final de op1
+        // Obtener nodo final de op1 para usarlo como inicial despues
+        DirectedGraph.NodeClass op1FinalNode = op1.getFinalNode();
 
 
         // Copiar cada nodo a automata 1 sin copiar nodo inicial anterior
@@ -187,8 +197,12 @@ public class RegExEvaluator {
                 i.setStartingNode(op1FinalNode);  // Cambiar nodo inicial de transicion
                 op1FinalNode.setFinal(false);  // Quitarle propiedad de nodo final a op1FinalNode
                 op1.addEdges(op1, i);  // Agregar a nuevo automata
+
+                // Indicar nuevo nodo final en nuevo automata (No hace falta editar el anterior)
+                op1.setNodeFinalMap(op2.getNodeFinalMap());
             }
         }
+
 
         return op1;
     }
@@ -219,29 +233,40 @@ public class RegExEvaluator {
 
         // Crear nodo inicial nuevo, eliminar anteriores y agregar transiciones epsilon
         int nuevoID = getStateCounter();  // Nombre de nuevo nodo inicial
-        int nodosInicialesViejosEliminados = 0;
         op1.addNode(op1, nuevoID, false, false);  // Agregar nuevo nodo final sin marca de ser final
-        while (nodosInicialesViejosEliminados < 2) {
-            DirectedGraph.NodeClass nodoInicialViejo = op1.getInicialNode();  // Obtener nodos inicial anterior
-            op1.addEdges(op1, op1.getParticularNode(nuevoID), nodoInicialViejo, "!");  // Agregar nueva transicion
-            nodoInicialViejo.setStart(false);  // Eliminar bandera de nodo inicial en nodo viejo
-            nodosInicialesViejosEliminados ++;
-        }
-        op1.getParticularNode(nuevoID).setStart(true);  // Agregar bandera de nodo inicial
+        DirectedGraph.NodeClass nuevoNodoInicial = op1.getParticularNode(nuevoID);
+
+        //      OP1
+        DirectedGraph.NodeClass nodoInicialViejo = op1.getInicialNode();  // Obtener nodo inicial de op1
+        op1.addEdges(op1, nuevoNodoInicial, nodoInicialViejo, "!");  // Agregar nueva transicion
+        nodoInicialViejo.setStart(false);  // Eliminar bandera de nodo inicial antiguo en op1
+
+        //      OP2
+        nodoInicialViejo = op2.getInicialNode();  // Obtener nodo inicial de op2
+        op1.addEdges(op1, nuevoNodoInicial, nodoInicialViejo, "!");  // Agregar nueva transicion
+        nodoInicialViejo.setStart(false);  // Eliminar bandera de nodo inicial antiguo en op1
+
+        //      Setear nuevo nodo inicial
+        nuevoNodoInicial.setStart(true);  // Agregar bandera de nodo inicial
         setStateCounter(nuevoID + 1);  // Cambiar conteo de estados
 
         // Crear nodo final nuevo, eliminar anteriores y agregar transiciones epsilon
         nuevoID = getStateCounter();  // Nombre de nuevo nodo final
-        int nodosFinalesViejosEliminados = 0;
         op1.addNode(op1, nuevoID, false, false);  // Agregar nuevo nodo final sin marca
-        while (nodosFinalesViejosEliminados < 2) {
-            DirectedGraph.NodeClass nodoFinalViejo = op1.getFinalNode();  // Obtener nodo final anterior
+        DirectedGraph.NodeClass nuevoNodoFinal = op1.getParticularNode(nuevoID);  // Obtener nuevo nodo final
 
-            op1.addEdges(op1, nodoFinalViejo, op1.getParticularNode(nuevoID), "!");  // Agregar nueva transicion
-            nodoFinalViejo.setFinal(false);  // Eliminar bandera de nodo final en nodo viejo
-            nodosFinalesViejosEliminados ++;
-        }
-        op1.getParticularNode(nuevoID).setFinal(true);  // Agregar bandera de nodo final
+        //      OP1
+        DirectedGraph.NodeClass nodoFinalViejo = op1.getFinalNode();  // Obtener nodo final de op1
+        op1.addEdges(op1, nodoFinalViejo, nuevoNodoFinal, "!");  // Agregar nueva transicion a final nuevo
+        nodoFinalViejo.setFinal(false);  // Eliminar bandera de nodo final en nodo viejo
+
+        //      OP2
+        nodoFinalViejo = op2.getFinalNode();  // Obtener nodo final de op2
+        op1.addEdges(op1, nodoFinalViejo, nuevoNodoFinal, "!");  // Agregar nueva transicion a final nuevo
+        nodoFinalViejo.setFinal(false);  // Eliminar bandera de nodo final en nodo viejo op2
+
+        //      Setear nuevo nodo final
+        nuevoNodoFinal.setFinal(true);  // Agregar bandera de nodo final
         setStateCounter(nuevoID + 1);  // Cambiar conteo de estados
 
         return op1;
