@@ -14,7 +14,7 @@ public class Main {
         /**
          * Normaliza la expresion a evaluar y la convierte a postfix
          */
-        String regex = RegExConverter.infixToPostfix("a?a");
+        String regex = RegExConverter.infixToPostfix("1");
         //System.out.println(regex);
 
         /**
@@ -26,12 +26,12 @@ public class Main {
         /**
          * Imprimir las caracteristicas del automata
          */
-        System.out.println(nfa.toString());
+        //System.out.println(nfa.automataDescription());
 
         /**
          * Mostrar en pantalla el automata generado
          */
-        AutomataRenderer.renderAutomata(nfa);
+        //AutomataRenderer.renderAutomata(nfa);
 
         /**
          * Ultimo tiempo

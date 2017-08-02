@@ -273,7 +273,7 @@ public class DirectedGraph {
      * Recorre todo el automata para devolver su descripcion
      * @return descripcion de automata
      */
-    public String toString(){
+    public String automataDescription(){
         // Nodos
         HashSet<DirectedGraph.NodeClass> nodos = getAllNodes();
         String resultNodos = "Estados: {";

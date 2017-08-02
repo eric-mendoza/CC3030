@@ -1,3 +1,4 @@
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Stack;
 
@@ -376,52 +377,34 @@ public class RegExEvaluator {
      */
     public static DirectedGraph duplicateGraph( DirectedGraph a){
         DirectedGraph a2 = new DirectedGraph();
-        // Obtener nodos de segundo automata
-        HashSet<DirectedGraph.NodeClass> nodos2 = a.getAllNodes();
+        // Obtener nodos de automata a clonar
+        HashSet<DirectedGraph.NodeClass> nodos = a.getAllNodes();
 
-        // Obtener transiciones automata 2
-        HashSet<DirectedGraph.edgeContents> edges2 = a.getEdges();
+        // Obtener transiciones automata a clonar
+        HashSet<DirectedGraph.edgeContents> edges = a.getEdges();
 
-        // Copiar cada nodo a copia automata 1
-        for (DirectedGraph.NodeClass i: nodos2) {
-            a2.addNode(a2, i.getId(), i.isStart(), i.isFinal());
+        // Crear un hash para guardar index viejo y nuevo para cada nodo
+        HashMap<Integer, Integer> oldToNewIndexMap = new HashMap<Integer, Integer>();  // Devuelve el nuevo indice segun viejo
+        int nuevoID;
+
+        // Copiar cada nodo a copia automata con nuevos indices
+        for (DirectedGraph.NodeClass i: nodos) {
+            nuevoID = getStateCounter();  // Obtener siguiente nombre de estado
+            oldToNewIndexMap.put(i.getId(), nuevoID);  // Guardar hash para ID
+
+            a2.addNode(a2, nuevoID, i.isStart(), i.isFinal());  // Crear nuevo nodo
+
+            setStateCounter(nuevoID + 1);  // Actualizar estados utilizados
+
         }
 
         // Copiar cada transicion a copia automata 1
-        for (DirectedGraph.edgeContents i: edges2) {
-            a2.addEdges(a2, i.getStartingNode(), i.getFinishingNode(), i.getTransition());  // AQUI HAY ERROES DE REFERENCIAS
+        DirectedGraph.NodeClass startingNode, finishNode;
+        for (DirectedGraph.edgeContents i: edges) {
+            startingNode = a2.getParticularNode(oldToNewIndexMap.get(i.getStartingNode().getId()));  // Obtener nodo inicial utilizando su ID viejo utilizando el mapa
+            finishNode = a2.getParticularNode(oldToNewIndexMap.get(i.getFinishingNode().getId()));  // Obtener nodo inicial utilizando su ID viejo utilizando el mapa
+            a2.addEdges(a2, startingNode, finishNode, i.getTransition());
         }
-
-        // Cambiar numeros y adaptar transiciones
-        // Obtener nodos de nuevo automata
-        HashSet<DirectedGraph.NodeClass> nodosNuevos = a2.getAllNodes();
-
-        // Obtener transiciones nuevo automata 2
-        HashSet<DirectedGraph.edgeContents> edgesNuevos = a2.getEdges();
-
-        // Cambiar
-        int nuevoEstado, viejoEstado;
-        for (DirectedGraph.NodeClass i: nodosNuevos) {
-            viejoEstado = i.getId();
-            nuevoEstado = getStateCounter();
-            setStateCounter(nuevoEstado + 1);
-
-            // Buscar transiciones que contengan al nodo a cambiar
-            for (DirectedGraph.edgeContents k: edgesNuevos) {
-                // Cambiar nodos de inicio
-                if (k.getStartingNode().getId() == viejoEstado){
-                    k.setStartingNode(i);
-                }
-
-                // Cambiar nodos de final
-                if (k.getFinishingNode().getId() == viejoEstado){
-                    k.setFinishingNode(i);
-                }
-            }
-
-            i.setId(nuevoEstado);  // Cambiar estado de nodo actual
-        }
-
         return a2;
     }
 }
