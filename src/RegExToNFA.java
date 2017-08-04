@@ -8,12 +8,12 @@ import java.util.Stack;
  * @version 1.0
  * @since 23/07/207
  */
-public class RegExEvaluator {
+public class RegExToNFA {
     /**
      * Atributos
      */
-    private static final char ADD = '+', STAR = '*', QMARK = '?', CONCAT = '.', OR = '|';
-    private static int stateCounter = 0;
+    private final char ADD = '+', STAR = '*', QMARK = '?', CONCAT = '.', OR = '|';
+    private int stateCounter = 0;
 
 
     /**
@@ -46,7 +46,7 @@ public class RegExEvaluator {
      * @param op1 primer estado a operar
      * @return retorna un grafo
      */
-    private static DirectedGraph evalSingleOp(char operation, DirectedGraph op1) {
+    private DirectedGraph evalSingleOp(char operation, DirectedGraph op1) {
         DirectedGraph result = new DirectedGraph();
 
         switch (operation) {
@@ -72,7 +72,7 @@ public class RegExEvaluator {
      * @param op2 segundo estado a operar
      * @return retorna un grafo
      */
-    private static DirectedGraph evalDoubleOp(char operation, DirectedGraph op1, DirectedGraph op2) {
+    private DirectedGraph evalDoubleOp(char operation, DirectedGraph op1, DirectedGraph op2) {
         DirectedGraph result = new DirectedGraph();
 
         switch (operation) {
@@ -93,7 +93,7 @@ public class RegExEvaluator {
      * @param op1 automata a aplicar operacion
      * @return nuevo automata
      */
-    private static DirectedGraph addGraphs(DirectedGraph op1){
+    private DirectedGraph addGraphs(DirectedGraph op1){
         DirectedGraph result;
         DirectedGraph result2;
         DirectedGraph copyOp1;
@@ -113,7 +113,7 @@ public class RegExEvaluator {
      * @param op1 automata a aplicar operacion
      * @return nuevo automata
      */
-    private static DirectedGraph qMarkGraphs(DirectedGraph op1){
+    private DirectedGraph qMarkGraphs(DirectedGraph op1){
         // Variables a utilizar
         DirectedGraph.NodeClass nodoInicialViejo, nodoFinalViejo, nodoInicialNuevo, nodoFinalNuevo;
 
@@ -155,7 +155,7 @@ public class RegExEvaluator {
      * @param op1 automata a aplicar operacion
      * @return nuevo automata
      */
-    private static DirectedGraph starGraphs(DirectedGraph op1){
+    private DirectedGraph starGraphs(DirectedGraph op1){
         // Variables a utilizar
         DirectedGraph.NodeClass nodoInicialViejo, nodoFinalViejo, nodoInicialNuevo, nodoFinalNuevo;
 
@@ -243,7 +243,7 @@ public class RegExEvaluator {
      * @param op2 segundo automata a operar
      * @return nuevo automata
      */
-    private static DirectedGraph orGraphs(DirectedGraph op1, DirectedGraph op2){
+    private DirectedGraph orGraphs(DirectedGraph op1, DirectedGraph op2){
         // Obtener nodos de segundo automata
         HashSet<DirectedGraph.NodeClass> nodos2 = op2.getAllNodes();
 
@@ -306,7 +306,7 @@ public class RegExEvaluator {
      * @param transition unica transicion del nuevo automata
      * @return un automata de una sola transicion con dos nodos
      */
-    private static DirectedGraph createSimpleGraph(String transition){
+    private DirectedGraph createSimpleGraph(String transition){
         DirectedGraph result = new DirectedGraph();
 
         // Agregar estados
@@ -327,7 +327,7 @@ public class RegExEvaluator {
      * @param expr expresion regular en postfix
      * @return retorna el grafo del automata
      */
-    public static DirectedGraph evaluate(String expr) {
+    public DirectedGraph evaluate(String expr) {
         Stack<DirectedGraph> stack = new Stack<DirectedGraph>();
         DirectedGraph op1, op2, result;
 
@@ -357,7 +357,7 @@ public class RegExEvaluator {
      * Devuelve el contador de estados, el cual indica el numero de estados que se han estado creando
      * @return el identificador del siguiente estado
      */
-    public static int getStateCounter() {
+    public int getStateCounter() {
         return stateCounter;
     }
 
@@ -366,8 +366,8 @@ public class RegExEvaluator {
      * Sirve para aumentar contador de estados
      * @param stateCounter cambio en numero
      */
-    public static void setStateCounter(int stateCounter) {
-        RegExEvaluator.stateCounter = stateCounter;
+    public void setStateCounter(int stateCounter) {
+        this.stateCounter = stateCounter;
     }
 
     /**
@@ -375,7 +375,7 @@ public class RegExEvaluator {
      * @param a automata a clonar
      * @return nuevo automata
      */
-    public static DirectedGraph duplicateGraph( DirectedGraph a){
+    public DirectedGraph duplicateGraph(DirectedGraph a){
         DirectedGraph a2 = new DirectedGraph();
         // Obtener nodos de automata a clonar
         HashSet<DirectedGraph.NodeClass> nodos = a.getAllNodes();
@@ -407,4 +407,5 @@ public class RegExEvaluator {
         }
         return a2;
     }
+
 }

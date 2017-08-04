@@ -356,4 +356,5 @@ public class DirectedGraph {
     public void setNodeInitialMap(HashMap<Integer, NodeClass> nodeInitialMap) {
         this.nodeInitialMap = nodeInitialMap;
     }
+
 }

@@ -1,3 +1,4 @@
+import java.util.Scanner;
 
 /**
  * La presente clase tiene como objetivo ingresar una expresion regular, y guiar el proceso de transformacion
@@ -8,30 +9,45 @@
 public class Main {
     public static void main(String[] args) {
         /**
+         * Pedir a usuario que ingrese un regex
+         */
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Ingrese su expresion regular (*|?+):");
+        String regex;
+        regex = scanner.next();
+
+        /**
+         * Crear objetos para procesos
+         */
+        RegExToNFA regExToNFA = new RegExToNFA();  // Conversor de regex a NFA
+        NFAToDFA nfaToDFA = new NFAToDFA();
+        long startTime, finishTime;
+
+        /**
          * Tomar tiempo
          */
-        long startTime = System.currentTimeMillis();
+        startTime = System.currentTimeMillis();
         /**
          * Normaliza la expresion a evaluar y la convierte a postfix
          */
-        String regex = RegExConverter.infixToPostfix("1");
+        regex = RegExConverter.infixToPostfix(regex);
         //System.out.println(regex);
 
         /**
          * Evalua la expresion obteniendo asi un NFA como resultado
          */
-        DirectedGraph nfa = RegExEvaluator.evaluate(regex);
-        long finishTime = System.currentTimeMillis();  // Tomar tiempo en construir automata
+        DirectedGraph nfa = regExToNFA.evaluate(regex);
+        finishTime = System.currentTimeMillis();  // Tomar tiempo en construir automata
 
         /**
          * Imprimir las caracteristicas del automata
          */
-        //System.out.println(nfa.automataDescription());
+        System.out.println(nfa.automataDescription());
 
         /**
          * Mostrar en pantalla el automata generado
          */
-        //AutomataRenderer.renderAutomata(nfa);
+        AutomataRenderer.renderAutomata(nfa);
 
         /**
          * Ultimo tiempo
