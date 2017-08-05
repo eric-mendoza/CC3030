@@ -1,3 +1,4 @@
+import java.util.HashSet;
 import java.util.Scanner;
 
 /**
@@ -47,15 +48,19 @@ public class Main {
         /**
          * Mostrar en pantalla el automata generado
          */
-        AutomataRenderer.renderAutomata(nfa);
+        //AutomataRenderer.renderAutomata(nfa);
 
         /**
-         * Ultimo tiempo
+         * Ultimo tiempo generacion NFA
          */
-
         long tiempo = finishTime - startTime;
         System.out.println("Tiempo es: ");
         System.out.println(tiempo);
+
+        /**
+         * Transformar de NFA - DFA
+         */
+        nfaToDFA.evaluate(nfa);
 
     }
 }

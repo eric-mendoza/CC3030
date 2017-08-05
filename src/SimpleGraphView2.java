@@ -21,6 +21,7 @@ import java.awt.Dimension;
 import java.awt.Paint;
 import java.awt.Stroke;
 import java.util.HashSet;
+import java.util.LinkedList;
 import javax.swing.JFrame;
 import org.apache.commons.collections15.Transformer;
 
@@ -42,10 +43,10 @@ public class SimpleGraphView2 {
          * Se va a copiar el automata a esta nueva libreria
          */
         // Obtener nodos de segundo automata
-        HashSet<DirectedGraph.NodeClass> nodos2 = automata.getAllNodes();
+        LinkedList<DirectedGraph.NodeClass> nodos2 = automata.getAllNodes();
 
         // Obtener transiciones automata 2
-        HashSet<DirectedGraph.edgeContents> edges2 = automata.getEdges();
+        LinkedList<DirectedGraph.edgeContents> edges2 = automata.getEdges();
 
         // Copiar cada nodo a automata 1
         for (DirectedGraph.NodeClass i: nodos2) {

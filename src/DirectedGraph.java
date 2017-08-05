@@ -1,5 +1,6 @@
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
 
 /**
@@ -16,8 +17,8 @@ public class DirectedGraph {
     /**
      * Atributos
      */
-    private  HashSet<NodeClass> nodes = new HashSet<DirectedGraph.NodeClass>();
-    private  HashSet<edgeContents> edges = new HashSet<DirectedGraph.edgeContents>();
+    private  LinkedList<NodeClass> nodes = new LinkedList<DirectedGraph.NodeClass>();
+    private  LinkedList<edgeContents> edges = new LinkedList<DirectedGraph.edgeContents>();
     private  HashMap<Integer, NodeClass> nodeMap = new HashMap<Integer, DirectedGraph.NodeClass>();
     private  HashMap<Integer, NodeClass> nodeInitialMap = new HashMap<Integer, DirectedGraph.NodeClass>();  // Guardar nodos iniciales
     private  HashMap<Integer, NodeClass> nodeFinalMap = new HashMap<Integer, DirectedGraph.NodeClass>();  // Guardar nodos finales
@@ -36,7 +37,7 @@ public class DirectedGraph {
          */
         boolean Final, Start;
         int  id;
-        HashSet<edgeContents> edges;
+        LinkedList<edgeContents> edges;
 
         /**
          * Constructor
@@ -50,7 +51,7 @@ public class DirectedGraph {
             if (isFinal) nodeFinalMap.put(id, this);  // Agregar a listado de finales de automata
             this.Final = isFinal;
             this.Start = isStart;
-            edges = new HashSet<DirectedGraph.edgeContents>();
+            edges = new LinkedList<DirectedGraph.edgeContents>();
         }
 
         /**
@@ -239,7 +240,7 @@ public class DirectedGraph {
      * Devuelve el hashmap de los nodos
      * @return hasmap de nodos
      */
-    public HashSet<NodeClass> getAllNodes(){
+    public LinkedList<NodeClass> getAllNodes(){
         return nodes;
     }
 
@@ -247,7 +248,7 @@ public class DirectedGraph {
      * Es para obtener las transiciones del automata
      * @return transiciones de automata
      */
-    public HashSet<edgeContents> getEdges(){
+    public LinkedList<edgeContents> getEdges(){
         return edges;
     }
 
@@ -275,7 +276,7 @@ public class DirectedGraph {
      */
     public String automataDescription(){
         // Nodos
-        HashSet<DirectedGraph.NodeClass> nodos = getAllNodes();
+        LinkedList<DirectedGraph.NodeClass> nodos = getAllNodes();
         String resultNodos = "Estados: {";
         int contador = 0;
         for (DirectedGraph.NodeClass i: nodos) {
@@ -298,7 +299,7 @@ public class DirectedGraph {
         resultNodos = resultNodos + "Estado de aceptacion: {" + getFinalNode().id + "}\n";
 
         // Simbolos
-        HashSet<DirectedGraph.edgeContents> edges = getEdges();
+        LinkedList<DirectedGraph.edgeContents> edges = getEdges();
         String resultEdges = "Simbolos: {";
         String symbol;
         HashSet<String> subresult = new HashSet<String>();

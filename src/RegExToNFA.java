@@ -1,5 +1,6 @@
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Stack;
 
 /**
@@ -200,10 +201,10 @@ public class RegExToNFA {
      */
     private static DirectedGraph concatenateGraphs(DirectedGraph op1, DirectedGraph op2){
         // Obtener nodos de segundo automata 2
-        HashSet<DirectedGraph.NodeClass> nodos2 = op2.getAllNodes();
+        LinkedList<DirectedGraph.NodeClass> nodos2 = op2.getAllNodes();
 
         // Obtener transiciones automata 2
-        HashSet<DirectedGraph.edgeContents> edges2 = op2.getEdges();
+        LinkedList<DirectedGraph.edgeContents> edges2 = op2.getEdges();
 
         // Obtener nodo final de op1 para usarlo como inicial despues
         DirectedGraph.NodeClass op1FinalNode = op1.getFinalNode();
@@ -245,10 +246,10 @@ public class RegExToNFA {
      */
     private DirectedGraph orGraphs(DirectedGraph op1, DirectedGraph op2){
         // Obtener nodos de segundo automata
-        HashSet<DirectedGraph.NodeClass> nodos2 = op2.getAllNodes();
+        LinkedList<DirectedGraph.NodeClass> nodos2 = op2.getAllNodes();
 
         // Obtener transiciones automata 2
-        HashSet<DirectedGraph.edgeContents> edges2 = op2.getEdges();
+        LinkedList<DirectedGraph.edgeContents> edges2 = op2.getEdges();
 
         // Copiar cada nodo a automata 1
         for (DirectedGraph.NodeClass i: nodos2) {
@@ -378,10 +379,10 @@ public class RegExToNFA {
     public DirectedGraph duplicateGraph(DirectedGraph a){
         DirectedGraph a2 = new DirectedGraph();
         // Obtener nodos de automata a clonar
-        HashSet<DirectedGraph.NodeClass> nodos = a.getAllNodes();
+        LinkedList<DirectedGraph.NodeClass> nodos = a.getAllNodes();
 
         // Obtener transiciones automata a clonar
-        HashSet<DirectedGraph.edgeContents> edges = a.getEdges();
+        LinkedList<DirectedGraph.edgeContents> edges = a.getEdges();
 
         // Crear un hash para guardar index viejo y nuevo para cada nodo
         HashMap<Integer, Integer> oldToNewIndexMap = new HashMap<Integer, Integer>();  // Devuelve el nuevo indice segun viejo
