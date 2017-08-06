@@ -1,7 +1,4 @@
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 /**
  * La presente clase tiene como objetivo simular a un automata. Lo que se realizo fue modificar una clase para grafos
@@ -20,8 +17,8 @@ public class DirectedGraph {
     private  LinkedList<NodeClass> nodes = new LinkedList<DirectedGraph.NodeClass>();
     private  LinkedList<edgeContents> edges = new LinkedList<DirectedGraph.edgeContents>();
     private  HashMap<Integer, NodeClass> nodeMap = new HashMap<Integer, DirectedGraph.NodeClass>();
-    private  HashMap<Integer, NodeClass> nodeInitialMap = new HashMap<Integer, DirectedGraph.NodeClass>();  // Guardar nodos iniciales
-    private  HashMap<Integer, NodeClass> nodeFinalMap = new HashMap<Integer, DirectedGraph.NodeClass>();  // Guardar nodos finales
+    private  HashSet<NodeClass> nodeInitialMap = new HashSet<DirectedGraph.NodeClass>();  // Guardar nodos iniciales
+    private  HashSet<NodeClass> nodeFinalMap = new HashSet<DirectedGraph.NodeClass>();  // Guardar nodos finales
     private  HashSet<String> alphabet = new HashSet<String>();  // Simbolos aceptados por el automata
 
     /**
@@ -48,8 +45,8 @@ public class DirectedGraph {
          */
         public NodeClass(int name, boolean isStart, boolean isFinal){
             id = name;
-            if (isStart) nodeInitialMap.put(id, this);  // Agregar a listado de inicios de automata
-            if (isFinal) nodeFinalMap.put(id, this);  // Agregar a listado de finales de automata
+            if (isStart) nodeInitialMap.add(this);  // Agregar a listado de inicios de automata
+            if (isFinal) nodeFinalMap.add(this);  // Agregar a listado de finales de automata
             this.Final = isFinal;
             this.Start = isStart;
             edges = new LinkedList<DirectedGraph.edgeContents>();
@@ -70,9 +67,9 @@ public class DirectedGraph {
         public void setFinal(boolean aFinal) {
             Final = aFinal;
             if (aFinal){
-                nodeFinalMap.put(getId(), this);
+                nodeFinalMap.add(this);
             } else {
-                nodeFinalMap.remove(getId());
+                nodeFinalMap.remove(this);
             }
         }
 
@@ -91,9 +88,9 @@ public class DirectedGraph {
         public void setStart(boolean start) {
             Start = start;
             if (start){
-                nodeInitialMap.put(this.getId(), this);
+                nodeInitialMap.add(this);
             } else {
-                nodeInitialMap.remove(getId());
+                nodeInitialMap.remove(this);
             }
         }
 
@@ -254,21 +251,35 @@ public class DirectedGraph {
     }
 
     /**
-     * Obtiene el nodo inicial del automata
+     * Devuelve los nodos iniciales del automata
      * @return nodo inicial
      */
-    public NodeClass getInicialNode(){
-        Map.Entry<Integer, NodeClass> entry = nodeInitialMap.entrySet().iterator().next();
-        return entry.getValue();
+    public HashSet<NodeClass> getInicialNode(){
+        return nodeInitialMap;
+    }
+
+    /**
+     * Obtiene los nodos finales del automata
+     * @return nodo final
+     */
+    public HashSet<NodeClass> getFinalNode(){
+        return nodeFinalMap;
+    }
+
+    /**
+     * Devuelve un nodo inicial del automata
+     * @return nodo inicial
+     */
+    public NodeClass getOneInicialNode(){
+        return nodeInitialMap.iterator().next();
     }
 
     /**
      * Obtiene el nodo final del automata
      * @return nodo final
      */
-    public NodeClass getFinalNode(){
-        Map.Entry<Integer, NodeClass> entry = nodeFinalMap.entrySet().iterator().next();
-        return entry.getValue();
+    public NodeClass getOneFinalNode(){
+        return nodeFinalMap.iterator().next();
     }
 
     /**
@@ -294,10 +305,33 @@ public class DirectedGraph {
         resultNodos += "\t- Son " + contador + " estados\n";
 
         // Nodo Inicial
-        resultNodos = resultNodos + "Estado inicial: {" + getInicialNode().id + "}\n";
+        resultNodos = resultNodos + "Estado inicial: {";
+        contador = 0;
+        for (NodeClass i: nodeInitialMap) {
+            resultNodos = resultNodos + String.valueOf((i.id));
+            if (contador < nodeInitialMap.size()-1){
+                resultNodos = resultNodos + ", ";
+            }
+            else {
+                resultNodos = resultNodos + "}\n";
+            }
+            contador++;
+        }
+
 
         // Nodo Final
-        resultNodos = resultNodos + "Estado de aceptacion: {" + getFinalNode().id + "}\n";
+        resultNodos = resultNodos + "Estado(s) de aceptacion: {";
+        contador = 0;
+        for (NodeClass i: nodeFinalMap) {
+            resultNodos = resultNodos + String.valueOf((i.id));
+            if (contador < nodeFinalMap.size()-1){
+                resultNodos += ", ";
+            }
+            else {
+                resultNodos = resultNodos + "}\n";
+            }
+            contador ++;
+        }
 
         // Simbolos
         LinkedList<DirectedGraph.edgeContents> edges = getEdges();
@@ -331,21 +365,14 @@ public class DirectedGraph {
         return resultNodos + resultEdges;
     }
 
-    public HashMap<Integer, NodeClass> getNodeFinalMap() {
+    public HashSet<NodeClass> getNodeFinalMap() {
         return nodeFinalMap;
     }
 
-    public void setNodeFinalMap(HashMap<Integer, NodeClass> nodeFinalMap) {
+    public void setNodeFinalMap(HashSet<NodeClass> nodeFinalMap) {
         this.nodeFinalMap = nodeFinalMap;
     }
 
-    public HashMap<Integer, NodeClass> getNodeInitialMap() {
-        return nodeInitialMap;
-    }
-
-    public void setNodeInitialMap(HashMap<Integer, NodeClass> nodeInitialMap) {
-        this.nodeInitialMap = nodeInitialMap;
-    }
 
     public HashSet<String> getAlphabet() {
         return alphabet;

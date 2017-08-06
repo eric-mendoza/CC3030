@@ -132,17 +132,29 @@ public class NFAToDFA {
     }
 
     private void generateTransitionTable(DirectedGraph nfa){
-        // Estado inicial de nfa
-        DirectedGraph.NodeClass nodoInicialNfa = nfa.getInicialNode();
+        // Estados iniciales de nfa (solo es uno)
+        HashSet<DirectedGraph.NodeClass> nodosInicialesNfa = nfa.getInicialNode();
+        DirectedGraph.NodeClass nodoInicialNfa = null;
+        for (DirectedGraph.NodeClass nodo: nodosInicialesNfa) {
+            nodoInicialNfa = nodo;
+        }
+
 
         // Estado final de nfa
-        DirectedGraph.NodeClass nodoFinalNfa = nfa.getFinalNode();
+        HashSet<DirectedGraph.NodeClass> nodosFinalesNfa = nfa.getFinalNode();
+        DirectedGraph.NodeClass nodoFinalNfa = null;
+        for (DirectedGraph.NodeClass nodo: nodosFinalesNfa) {
+            nodoFinalNfa = nodo;
+        }
 
         // Obtener conjuntos alcanzados por nodoInicialNfa con epsilon
         HashSet<DirectedGraph.NodeClass> nodosIniciales = eClosureStates.get(nodoInicialNfa);
 
+        // Ver si contiene el estado de aceptacion el conjunto inicial
+        boolean isFinal = nodosIniciales.contains(nodoFinalNfa);
+
         // Crear Destado inicial con conjuntos alcanzados por estado inicial
-        Dstate dEstadoInicial = new Dstate(nodosIniciales, true, false);
+        Dstate dEstadoInicial = new Dstate(nodosIniciales, true, isFinal);
         Dstate estadoTemporalAgregado;
 
         // Agregar Destado a conjunto de Destados
@@ -165,7 +177,7 @@ public class NFAToDFA {
                 HashSet<DirectedGraph.NodeClass> conjuntoEstadosAlcanzados = moveT(unmarkedState.getConjuntoEstados(), input);
 
                 // Ver si contiene el estado de aceptacion el conjunto
-                boolean isFinal = conjuntoEstadosAlcanzados.contains(nodoFinalNfa);
+                isFinal = conjuntoEstadosAlcanzados.contains(nodoFinalNfa);
 
                 // Crear Dstate que se podria agregar
                 estadoTemporalAgregado = new Dstate(conjuntoEstadosAlcanzados, false, isFinal);

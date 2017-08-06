@@ -18,6 +18,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 
 /**
  * Esta clase tiene como objetivo mostrar en pantalla el automata que se le pase a sus metodos
@@ -27,7 +28,7 @@ import java.util.Iterator;
  */
 
 public class AutomataRenderer {
-    public static void renderAutomata(final DirectedGraph automata){
+    public static void renderAutomata(final DirectedGraph automata, String text){
         /**
          * Crear grafo visual
          */
@@ -47,9 +48,28 @@ public class AutomataRenderer {
         Transformer<Integer,Paint> vertexPaint = new Transformer<Integer,Paint>() {
 
             public Paint transform(Integer i) {
-                if(i == automata.getFinalNode().getId()) return Color.RED;
-                else if (i == automata.getInicialNode().getId()) return Color.YELLOW;
-                return Color.GREEN;
+                Color color = Color.GREEN;
+                // Obtener numeros de iniciales de nodos
+                HashSet<DirectedGraph.NodeClass> nodosIniciales = automata.getInicialNode();
+                LinkedList<Integer> idIniciales = new LinkedList<Integer>();
+                for (DirectedGraph.NodeClass nodo: nodosIniciales){
+                    idIniciales.add(nodo.getId());
+                }
+
+                // Obtener numeros de finales de nodos
+                HashSet<DirectedGraph.NodeClass> nodosFinales = automata.getFinalNode();
+
+                LinkedList<Integer> idFinales = new LinkedList<Integer>();
+                for (DirectedGraph.NodeClass nodo: nodosFinales){
+                    idFinales.add(nodo.getId());
+                }
+
+                if(idIniciales.contains(i)) color = Color.YELLOW;
+
+                if(idFinales.contains(i)) color = Color.RED;
+                else if (!idIniciales.contains(i)) color = Color.GREEN;
+
+                return color;
             }
         };
 
@@ -74,8 +94,8 @@ public class AutomataRenderer {
         /**
          * Desplegar grafo en pantalla
          */
-        JFrame frame = new JFrame("Simple Graph View 2");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        JFrame frame = new JFrame(text);
+        frame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
         frame.getContentPane().add(vv);
         frame.pack();
         frame.setVisible(true);

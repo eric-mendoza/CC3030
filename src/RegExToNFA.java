@@ -119,8 +119,8 @@ public class RegExToNFA {
         DirectedGraph.NodeClass nodoInicialViejo, nodoFinalViejo, nodoInicialNuevo, nodoFinalNuevo;
 
         // Agregar transicion desde final anterior a inicio anterior
-        nodoFinalViejo = op1.getFinalNode();
-        nodoInicialViejo = op1.getInicialNode();
+        nodoFinalViejo = op1.getOneFinalNode();
+        nodoInicialViejo = op1.getOneInicialNode();
 
         // Crear nodo inicial nuevo, eliminar anterior y agregar transiciones epsilon
         int nuevoID = getStateCounter();  // Nombre de nuevo nodo inicial
@@ -161,8 +161,8 @@ public class RegExToNFA {
         DirectedGraph.NodeClass nodoInicialViejo, nodoFinalViejo, nodoInicialNuevo, nodoFinalNuevo;
 
         // Agregar transicion desde final anterior a inicio anterior
-        nodoFinalViejo = op1.getFinalNode();
-        nodoInicialViejo = op1.getInicialNode();
+        nodoFinalViejo = op1.getOneFinalNode();
+        nodoInicialViejo = op1.getOneInicialNode();
         op1.addEdges(op1, nodoFinalViejo, nodoInicialViejo, "!");
 
         // Crear nodo inicial nuevo, eliminar anterior y agregar transiciones epsilon
@@ -207,7 +207,7 @@ public class RegExToNFA {
         LinkedList<DirectedGraph.edgeContents> edges2 = op2.getEdges();
 
         // Obtener nodo final de op1 para usarlo como inicial despues
-        DirectedGraph.NodeClass op1FinalNode = op1.getFinalNode();
+        DirectedGraph.NodeClass op1FinalNode = op1.getOneFinalNode();
 
 
         // Copiar cada nodo a automata 1 sin copiar nodo inicial anterior
@@ -267,12 +267,12 @@ public class RegExToNFA {
         DirectedGraph.NodeClass nuevoNodoInicial = op1.getParticularNode(nuevoID);
 
         //      OP1
-        DirectedGraph.NodeClass nodoInicialViejo = op1.getInicialNode();  // Obtener nodo inicial de op1
+        DirectedGraph.NodeClass nodoInicialViejo = op1.getOneInicialNode();  // Obtener nodo inicial de op1
         op1.addEdges(op1, nuevoNodoInicial, nodoInicialViejo, "!");  // Agregar nueva transicion
         nodoInicialViejo.setStart(false);  // Eliminar bandera de nodo inicial antiguo en op1
 
         //      OP2
-        nodoInicialViejo = op2.getInicialNode();  // Obtener nodo inicial de op2
+        nodoInicialViejo = op2.getOneInicialNode();  // Obtener nodo inicial de op2
         op1.addEdges(op1, nuevoNodoInicial, nodoInicialViejo, "!");  // Agregar nueva transicion
         nodoInicialViejo.setStart(false);  // Eliminar bandera de nodo inicial antiguo en op1
 
@@ -286,12 +286,12 @@ public class RegExToNFA {
         DirectedGraph.NodeClass nuevoNodoFinal = op1.getParticularNode(nuevoID);  // Obtener nuevo nodo final
 
         //      OP1
-        DirectedGraph.NodeClass nodoFinalViejo = op1.getFinalNode();  // Obtener nodo final de op1
+        DirectedGraph.NodeClass nodoFinalViejo = op1.getOneFinalNode();  // Obtener nodo final de op1
         op1.addEdges(op1, nodoFinalViejo, nuevoNodoFinal, "!");  // Agregar nueva transicion a final nuevo
         nodoFinalViejo.setFinal(false);  // Eliminar bandera de nodo final en nodo viejo
 
         //      OP2
-        nodoFinalViejo = op2.getFinalNode();  // Obtener nodo final de op2
+        nodoFinalViejo = op2.getOneFinalNode();  // Obtener nodo final de op2
         op1.addEdges(op1, nodoFinalViejo, nuevoNodoFinal, "!");  // Agregar nueva transicion a final nuevo
         nodoFinalViejo.setFinal(false);  // Eliminar bandera de nodo final en nodo viejo op2
 

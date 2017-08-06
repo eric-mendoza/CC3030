@@ -48,7 +48,7 @@ public class Main {
         /**
          * Mostrar en pantalla el automata generado
          */
-        //AutomataRenderer.renderAutomata(nfa);
+        AutomataRenderer.renderAutomata(nfa, "NFA");
 
         /**
          * Ultimo tiempo generacion NFA
@@ -70,6 +70,8 @@ public class Main {
         /**
          * Mostrar en pantalla el dfa
          */
-        AutomataRenderer.renderAutomata(dfa);
+        AutomataRenderer.renderAutomata(dfa, "DFA");
+
+
     }
 }
