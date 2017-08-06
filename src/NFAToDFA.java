@@ -24,8 +24,7 @@ public class NFAToDFA {
     public DirectedGraph convert(DirectedGraph nfa){
         generateSimpleEClosure(nfa);  // Obtener los estados que se pueden alcanzar por epsilon de un estado
         generateTransitionTable(nfa);  // Generar la tabla de transiciones para el nuevo dfa
-
-        return generateDFA();
+        return generateDFA(nfa);
     }
 
     /**
@@ -95,7 +94,7 @@ public class NFAToDFA {
      * @param symbol es la entrada que desencadena el movimiento
      * @return devuelve un conjunto de estados alcanzables
      */
-    private HashSet<DirectedGraph.NodeClass> moveT(HashSet<DirectedGraph.NodeClass> set, String symbol){
+    public HashSet<DirectedGraph.NodeClass> moveT(HashSet<DirectedGraph.NodeClass> set, String symbol){
         // Variable para almacenar estados
         HashSet<DirectedGraph.NodeClass> resultado = new HashSet<DirectedGraph.NodeClass>();
 
@@ -113,7 +112,7 @@ public class NFAToDFA {
      * @param symbol es la entrada que provoca el movimiento
      * @return devuelve un conjunto de estados alcanzables
      */
-    private HashSet<DirectedGraph.NodeClass> moveS(DirectedGraph.NodeClass nodo, String symbol){
+    public HashSet<DirectedGraph.NodeClass> moveS(DirectedGraph.NodeClass nodo, String symbol){
         // Variable para almacenar estados
         HashSet<DirectedGraph.NodeClass> resultado = new HashSet<DirectedGraph.NodeClass>();
 
@@ -129,6 +128,18 @@ public class NFAToDFA {
             }
         }
         return resultado;
+    }
+
+    public DirectedGraph.NodeClass move(DirectedGraph.NodeClass nodo, String symbol){
+        // Analizar cada una de las transiciones del estado
+        for (DirectedGraph.edgeContents transicion: nodo.edges) {
+            // Si una transicion es igual a el simbolo, retornar estado
+            if (transicion.getTransition().equals(symbol)){
+                return transicion.getFinishingNode();
+            }
+        }
+
+        return null;
     }
 
     private void generateTransitionTable(DirectedGraph nfa){
@@ -246,8 +257,9 @@ public class NFAToDFA {
         return null;
     }
 
-    private DirectedGraph generateDFA(){
+    private DirectedGraph generateDFA(DirectedGraph nfa){
         DirectedGraph dfa = new DirectedGraph();
+        dfa.setAlphabet(nfa.getAlphabet());
         int contador = 0;
         HashMap<Dstate, Integer> convertDstateToState = new HashMap<Dstate, Integer>(dStates.size(), (float) 1.0);
 
@@ -276,5 +288,14 @@ public class NFAToDFA {
         }
 
         return dfa;
+    }
+
+    /**
+     * Devuelve el e-Closure de un estado
+     * @param nodo estado a analizar
+     * @return conjunto de estados alcanzados
+     */
+    public HashSet<DirectedGraph.NodeClass> getEClosure(DirectedGraph.NodeClass nodo){
+        return eClosureStates.get(nodo);
     }
 }

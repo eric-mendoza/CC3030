@@ -336,7 +336,7 @@ public class DirectedGraph {
         // Simbolos
         LinkedList<DirectedGraph.edgeContents> edges = getEdges();
         String resultEdges = "Simbolos: {";
-
+        contador = 0;
         for (String i: alphabet) {
             resultEdges = resultEdges + i;
             if (contador < alphabet.size()-1){
