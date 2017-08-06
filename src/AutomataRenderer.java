@@ -47,7 +47,8 @@ public class AutomataRenderer {
         Transformer<Integer,Paint> vertexPaint = new Transformer<Integer,Paint>() {
 
             public Paint transform(Integer i) {
-                if(i == automata.getInicialNode().getId() || i == automata.getFinalNode().getId()) return Color.RED;
+                if(i == automata.getFinalNode().getId()) return Color.RED;
+                else if (i == automata.getInicialNode().getId()) return Color.YELLOW;
                 return Color.GREEN;
             }
         };

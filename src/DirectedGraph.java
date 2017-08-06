@@ -22,6 +22,7 @@ public class DirectedGraph {
     private  HashMap<Integer, NodeClass> nodeMap = new HashMap<Integer, DirectedGraph.NodeClass>();
     private  HashMap<Integer, NodeClass> nodeInitialMap = new HashMap<Integer, DirectedGraph.NodeClass>();  // Guardar nodos iniciales
     private  HashMap<Integer, NodeClass> nodeFinalMap = new HashMap<Integer, DirectedGraph.NodeClass>();  // Guardar nodos finales
+    private  HashSet<String> alphabet = new HashSet<String>();  // Simbolos aceptados por el automata
 
     /**
      * Contructor de la clase DirectedGraph
@@ -301,22 +302,10 @@ public class DirectedGraph {
         // Simbolos
         LinkedList<DirectedGraph.edgeContents> edges = getEdges();
         String resultEdges = "Simbolos: {";
-        String symbol;
-        HashSet<String> subresult = new HashSet<String>();
-        contador = 0;
 
-        // Copiar simbolos
-        for (DirectedGraph.edgeContents i: edges) {
-            symbol = i.getTransition();
-            if (!symbol.equals("!")){
-                subresult.add(symbol);
-            }
-        }
-
-        for (String i: subresult
-             ) {
+        for (String i: alphabet) {
             resultEdges = resultEdges + i;
-            if (contador < subresult.size()-1){
+            if (contador < alphabet.size()-1){
                 resultEdges = resultEdges + ", ";
             }
             else {
@@ -358,4 +347,11 @@ public class DirectedGraph {
         this.nodeInitialMap = nodeInitialMap;
     }
 
+    public HashSet<String> getAlphabet() {
+        return alphabet;
+    }
+
+    public void setAlphabet(HashSet<String> alphabet) {
+        this.alphabet = alphabet;
+    }
 }

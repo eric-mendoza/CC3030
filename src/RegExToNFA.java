@@ -199,7 +199,7 @@ public class RegExToNFA {
      * @param op2 segundo automata a concatenar
      * @return nuevo automata
      */
-    private static DirectedGraph concatenateGraphs(DirectedGraph op1, DirectedGraph op2){
+    private DirectedGraph concatenateGraphs(DirectedGraph op1, DirectedGraph op2){
         // Obtener nodos de segundo automata 2
         LinkedList<DirectedGraph.NodeClass> nodos2 = op2.getAllNodes();
 
@@ -331,25 +331,32 @@ public class RegExToNFA {
     public DirectedGraph evaluate(String expr) {
         Stack<DirectedGraph> stack = new Stack<DirectedGraph>();
         DirectedGraph op1, op2, result;
+        HashSet<String> alphabet = new HashSet<String>();
 
         for (int i = 0; i < expr.length(); i++) {
             char c = expr.charAt(i);
             if (isTwoOperator(c)) {
                 op2 = stack.pop();
                 op1 = stack.pop();
-                result = evalDoubleOp(expr.charAt(i), op1, op2);
+                result = evalDoubleOp(c, op1, op2);
                 stack.push(result);
             }
             else if (isOneOperator(c)){
                 op1 = stack.pop();
-                result = evalSingleOp(expr.charAt(i), op1);
+                result = evalSingleOp(c, op1);
                 stack.push(result);
             }
-            else
-                stack.push(createSimpleGraph(String.valueOf(expr.charAt(i))));
+            else {
+                stack.push(createSimpleGraph(String.valueOf(c)));
+                String letra = String.valueOf(c);
+                if (!letra.equals("!")){
+                    alphabet.add(letra);  // Agregar letra a alfabeto
+                }
+            }
         }
 
         result = stack.pop();
+        result.setAlphabet(alphabet);
         return result;
     }
 
@@ -358,7 +365,7 @@ public class RegExToNFA {
      * Devuelve el contador de estados, el cual indica el numero de estados que se han estado creando
      * @return el identificador del siguiente estado
      */
-    public int getStateCounter() {
+    private int getStateCounter() {
         return stateCounter;
     }
 
@@ -367,7 +374,7 @@ public class RegExToNFA {
      * Sirve para aumentar contador de estados
      * @param stateCounter cambio en numero
      */
-    public void setStateCounter(int stateCounter) {
+    private void setStateCounter(int stateCounter) {
         this.stateCounter = stateCounter;
     }
 
@@ -376,7 +383,7 @@ public class RegExToNFA {
      * @param a automata a clonar
      * @return nuevo automata
      */
-    public DirectedGraph duplicateGraph(DirectedGraph a){
+    private DirectedGraph duplicateGraph(DirectedGraph a){
         DirectedGraph a2 = new DirectedGraph();
         // Obtener nodos de automata a clonar
         LinkedList<DirectedGraph.NodeClass> nodos = a.getAllNodes();

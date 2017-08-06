@@ -43,7 +43,7 @@ public class Main {
         /**
          * Imprimir las caracteristicas del automata
          */
-        System.out.println(nfa.automataDescription());
+        //System.out.println(nfa.automataDescription());
 
         /**
          * Mostrar en pantalla el automata generado
@@ -60,7 +60,16 @@ public class Main {
         /**
          * Transformar de NFA - DFA
          */
-        nfaToDFA.evaluate(nfa);
+        DirectedGraph dfa = nfaToDFA.convert(nfa);
 
+        /**
+         * Descripcion de dfa
+         */
+        System.out.println(dfa.automataDescription());
+
+        /**
+         * Mostrar en pantalla el dfa
+         */
+        AutomataRenderer.renderAutomata(dfa);
     }
 }

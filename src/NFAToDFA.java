@@ -13,20 +13,24 @@ public class NFAToDFA {
      * Atributos
      */
     private HashMap<DirectedGraph.NodeClass, HashSet<DirectedGraph.NodeClass>> eClosureStates = new HashMap<DirectedGraph.NodeClass, HashSet<DirectedGraph.NodeClass>>();
+    private LinkedList<Dstate> dStates = new LinkedList<Dstate>();  // Futuros estados del DFA
+    private LinkedList<Dtransition> dTransitions = new LinkedList<Dtransition>();  // Futuros transiciones del DFA
 
     /**
      * Funcion que se encarga de guiar el algoritmo de conversion de nfa-dfa
      * @param nfa automata que se desea convertir a dfa
      * @return un dfa
      */
-    public DirectedGraph evaluate(DirectedGraph nfa){
-        generateSimpleEClosure(nfa);
-        return null;
+    public DirectedGraph convert(DirectedGraph nfa){
+        generateSimpleEClosure(nfa);  // Obtener los estados que se pueden alcanzar por epsilon de un estado
+        generateTransitionTable(nfa);  // Generar la tabla de transiciones para el nuevo dfa
+
+        return generateDFA();
     }
 
     /**
-     * Este metodo tiene como objetivo generar el e-closure de cada estado del automata nfa en primera generacion
-     * @param nfa automata a utilizar
+     * Este metodo tiene como objetivo generar el e-closure de cada estado del automata y almacenarlo en una variable
+     * @param nfa automata a procesar
      */
     private void generateSimpleEClosure(DirectedGraph nfa) {
         // Obtener nodos de automata a procesar
@@ -45,7 +49,7 @@ public class NFAToDFA {
     }
 
     /**
-     * Devuelve el e-closure simple de un estado
+     * Devuelve el e-closure de un estado
      * @param nodo el estado al que se le obtendra el e-closure
      * @return retorna un conjunto con los estados a los que se puede llegar
      */
@@ -55,8 +59,10 @@ public class NFAToDFA {
             if (transicion.getTransition().equals("!")){
                 DirectedGraph.NodeClass nodoDestino = transicion.getFinishingNode();
 
-                boolean fueAgregado = estadosTemp.add(nodoDestino);  // Agregar nodo visitado
+                // Intentar agregar nodo a conjunto de nodos alcanzados
+                boolean fueAgregado = estadosTemp.add(nodoDestino);
 
+                // Si se agrega, entonces visitar los estados a los que se puede llegar con dicho nodo
                 if (fueAgregado){
                     estadosTemp.addAll(stateEClosure(nodoDestino, estadosTemp));
                 }
@@ -67,12 +73,196 @@ public class NFAToDFA {
     }
 
     /**
-     * Este metodo tiene como objetivo obtener el e-closure de un estado y sus estados alcanzados por epsilon
+     * Este metodo tiene como objetivo obtener el e-closure de un conjunto de estados
+     * @param set es el conjunto de estados que se desea procesar
+     * @return retorna un conjunto de estados alcanzables
      */
-    private HashSet<DirectedGraph.NodeClass> deepEClosure(HashSet<DirectedGraph.NodeClass> state){
+    private HashSet<DirectedGraph.NodeClass> setEClosure(HashSet<DirectedGraph.NodeClass> set){
+        HashSet<DirectedGraph.NodeClass> resultado = new HashSet<DirectedGraph.NodeClass>();
+        HashSet<DirectedGraph.NodeClass> estadosAlcanzados;
 
-        return new HashSet<DirectedGraph.NodeClass>();
+        for (DirectedGraph.NodeClass nodo: set){
+            estadosAlcanzados = eClosureStates.get(nodo);  // Obtener los estados a los que se llega con un estado
+            resultado.addAll(estadosAlcanzados);  // Hacer la union de los estados alcanzados
+        }
+        return resultado;
     }
 
+    /**
+     * Este metodo tiene como objetivo obtener el conjunto de estados que se alcanzan con una entrada desde un conjunto
+     * de estados
+     * @param set es el conjunto de estados desde donde se analiza
+     * @param symbol es la entrada que desencadena el movimiento
+     * @return devuelve un conjunto de estados alcanzables
+     */
+    private HashSet<DirectedGraph.NodeClass> moveT(HashSet<DirectedGraph.NodeClass> set, String symbol){
+        // Variable para almacenar estados
+        HashSet<DirectedGraph.NodeClass> resultado = new HashSet<DirectedGraph.NodeClass>();
 
+        // Obtener los estados alcanzados por cada nodo
+        for (DirectedGraph.NodeClass nodo: set) {
+            resultado.addAll(moveS(nodo, symbol));
+        }
+        return resultado;
+    }
+
+    /**
+     * Este metodo tiene como objetivo obtener el conjunto de estados que se alcanzan desde un solo estado considera
+     * las transiciones epsilon
+     * @param nodo es el estado desde donde se inicia
+     * @param symbol es la entrada que provoca el movimiento
+     * @return devuelve un conjunto de estados alcanzables
+     */
+    private HashSet<DirectedGraph.NodeClass> moveS(DirectedGraph.NodeClass nodo, String symbol){
+        // Variable para almacenar estados
+        HashSet<DirectedGraph.NodeClass> resultado = new HashSet<DirectedGraph.NodeClass>();
+
+        // Analizar cada una de las transiciones de los estados
+        for (DirectedGraph.edgeContents transicion: nodo.edges) {
+            // Si una transicion es igual a el simbolo, guardar los estados a los que me lleva
+            if (transicion.getTransition().equals(symbol)){
+                DirectedGraph.NodeClass nodoDestino = transicion.getFinishingNode();
+
+                // Agregar todos los nodos alcanzados por epsilon del nodo alcanzado por a
+                resultado.addAll(eClosureStates.get(nodoDestino));
+
+            }
+        }
+        return resultado;
+    }
+
+    private void generateTransitionTable(DirectedGraph nfa){
+        // Estado inicial de nfa
+        DirectedGraph.NodeClass nodoInicialNfa = nfa.getInicialNode();
+
+        // Estado final de nfa
+        DirectedGraph.NodeClass nodoFinalNfa = nfa.getFinalNode();
+
+        // Obtener conjuntos alcanzados por nodoInicialNfa con epsilon
+        HashSet<DirectedGraph.NodeClass> nodosIniciales = eClosureStates.get(nodoInicialNfa);
+
+        // Crear Destado inicial con conjuntos alcanzados por estado inicial
+        Dstate dEstadoInicial = new Dstate(nodosIniciales, true, false);
+        Dstate estadoTemporalAgregado;
+
+        // Agregar Destado a conjunto de Destados
+        dStates.add(dEstadoInicial);
+
+        // Obtener alphabeto de nfa
+        HashSet<String> alphabeto = nfa.getAlphabet();
+
+        // Crearn variable de estado no marcado
+        Dstate unmarkedState = dEstadoInicial;
+
+        // Crear resto de Destados
+        while (unmarkedState != null){
+            // Marcar estado inicial ERROR
+            unmarkedState.setMarked(true);
+
+            // Procesar cada entrada del alfabeto y su resultado
+            for (String input: alphabeto){
+                // Obtener el conjunto de estados que se alcanzan con cierta entrada
+                HashSet<DirectedGraph.NodeClass> conjuntoEstadosAlcanzados = moveT(unmarkedState.getConjuntoEstados(), input);
+
+                // Ver si contiene el estado de aceptacion el conjunto
+                boolean isFinal = conjuntoEstadosAlcanzados.contains(nodoFinalNfa);
+
+                // Crear Dstate que se podria agregar
+                estadoTemporalAgregado = new Dstate(conjuntoEstadosAlcanzados, false, isFinal);
+
+                // Verificar que estadoTemporalAgregado no exista en Destados
+                Dstate estadoTemporalEsUnico = getUniqueDstate(estadoTemporalAgregado);
+
+                // Agregar estadoTemporalAgregado si no existe
+                if (estadoTemporalEsUnico == null){
+                    dStates.add(estadoTemporalAgregado);
+
+                    // Crear Dtransicion para el estado creado
+                    addDtransition(unmarkedState, estadoTemporalAgregado, input);
+                }
+
+                // Agregar transicion a estado existente
+                else {
+                    addDtransition(unmarkedState, estadoTemporalEsUnico, input);
+                }
+            }
+
+            // Actualizar unmarkedState
+            unmarkedState = existUnmarkedDstate();
+        }
+    }
+
+    /**
+     * Indica si existen estados sin marcar en el conjunto de estados del dfa
+     * @return verdadero: si existen estados sin marcar; falso, si ya estan marcados todos los estados
+     */
+    private Dstate existUnmarkedDstate(){
+        for (Dstate dEstado: dStates){
+            if (!dEstado.isMarked()){
+                return dEstado;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Se utiliza para crear una nueva dTransicion y anadirla al Destado
+     * @param finishingState Estado al que se llega con la transicion
+     * @param startingState Estado desde el que se inicia
+     * @param transition Transicion que provoca el cambio
+     */
+    private void addDtransition(Dstate startingState, Dstate finishingState, String transition){
+        Dtransition nuevaTransicion = new Dtransition(finishingState, startingState, transition);
+        dTransitions.add(nuevaTransicion);
+        startingState.addTransitions(nuevaTransicion);
+    }
+
+    /**
+     * Verifica si un estado ya exite en Dstates, si ya existe, devuelve dicho estado
+     * @param dstate estado a analizar
+     * @return null, si no existe; dstate si existe
+     */
+    private Dstate getUniqueDstate(Dstate dstate){
+        for (Dstate dstate2: dStates){
+            // Si ya existe el estado, devolver dicho estado
+            if (dstate2.equals(dstate)){
+                return dstate2;
+            }
+        }
+
+        // Si no existe estado, devolver el estado ingresado
+        return null;
+    }
+
+    private DirectedGraph generateDFA(){
+        DirectedGraph dfa = new DirectedGraph();
+        int contador = 0;
+        HashMap<Dstate, Integer> convertDstateToState = new HashMap<Dstate, Integer>(dStates.size(), (float) 1.0);
+
+        // Crear nodo con cada dstate
+        for (Dstate dstate: dStates){
+            // Agregar nuevo nodo a dfa
+            dfa.addNode(dfa, contador, dstate.isdStateInitial(), dstate.isdStateFinal());
+
+            // Guardar equivalente en mapa
+            convertDstateToState.put(dstate, contador);
+
+            // Aumentar contador
+            contador++;
+        }
+
+        // Agregar las transiciones
+        for (Dtransition dtransition: dTransitions){
+            // Obtener nodo inicial de transicion
+            int nodoInicial = convertDstateToState.get(dtransition.getStartingState());
+
+            // Obtener nodo final de transicion
+            int nodoFinal = convertDstateToState.get(dtransition.getFinishingState());
+
+            // Crear nueva transicion
+            dfa.addEdges(dfa, dfa.getParticularNode(nodoInicial), dfa.getParticularNode(nodoFinal), dtransition.getTransition());
+        }
+
+        return dfa;
+    }
 }
