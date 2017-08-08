@@ -29,7 +29,7 @@ public class DirectedGraph {
     /**
      * Clase que simula los estados del automata
      */
-    public class NodeClass{
+    public class NodeClass implements Comparable<NodeClass>{
         /**
          * Atributos de clase nodo
          */
@@ -108,6 +108,14 @@ public class DirectedGraph {
          */
         public void setId(int id) {
             this.id = id;
+        }
+
+
+        @Override
+        public int compareTo(NodeClass o) {
+            Integer id1 = this.getId();
+            Integer id2 = this.getId();
+            return id1.compareTo(id2);
         }
     }
 
@@ -381,4 +389,5 @@ public class DirectedGraph {
     public void setAlphabet(HashSet<String> alphabet) {
         this.alphabet = alphabet;
     }
+
 }

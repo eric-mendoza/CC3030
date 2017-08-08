@@ -100,7 +100,7 @@ public class Main {
         /**
          * Mostrar en pantalla el dfa
          */
-        //AutomataRenderer.renderAutomata(dfa, "DFA");
+        AutomataRenderer.renderAutomata(dfa, "DFA");
 
         /**
          * Simular NFA

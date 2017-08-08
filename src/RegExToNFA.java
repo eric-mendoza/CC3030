@@ -95,17 +95,37 @@ public class RegExToNFA {
      * @return nuevo automata
      */
     private DirectedGraph addGraphs(DirectedGraph op1){
-        DirectedGraph result;
-        DirectedGraph result2;
-        DirectedGraph copyOp1;
+        // Variables a utilizar
+        DirectedGraph.NodeClass nodoInicialViejo, nodoFinalViejo, nodoInicialNuevo, nodoFinalNuevo;
 
-        copyOp1 = duplicateGraph(op1);
+        // Agregar transicion desde final anterior a inicio anterior
+        nodoFinalViejo = op1.getOneFinalNode();
+        nodoInicialViejo = op1.getOneInicialNode();
+        op1.addEdges(op1, nodoFinalViejo, nodoInicialViejo, "!");
 
-        // Realizar estrella y concatenacion
-        result = starGraphs(copyOp1);  // Obtener op1*
-        result2 =  concatenateGraphs(op1, result);
+        // Crear nodo inicial nuevo, eliminar anterior y agregar transiciones epsilon
+        int nuevoID = getStateCounter();  // Nombre de nuevo nodo inicial
+        op1.addNode(op1, nuevoID, false, false);  // Agregar nuevo nodo final sin marca de ser final
+        nodoInicialNuevo = op1.getParticularNode(nuevoID);  // Obtener nodo inicial nuevo
 
-        return result2;
+        op1.addEdges(op1, nodoInicialNuevo, nodoInicialViejo, "!");  // Agregar nueva transicion
+
+        nodoInicialViejo.setStart(false);  // Eliminar bandera de nodo inicial en nodo viejo
+        nodoInicialNuevo.setStart(true);  // Agregar bandera de nodo inicial
+        setStateCounter(nuevoID + 1);  // Cambiar conteo de estados
+
+        // Crear nodo final nuevo, eliminar anteriores y agregar transiciones epsilon
+        nuevoID = getStateCounter();  // Nombre de nuevo nodo final
+        op1.addNode(op1, nuevoID, false, false);  // Agregar nuevo nodo final sin marca
+        nodoFinalNuevo = op1.getParticularNode(nuevoID);
+
+        op1.addEdges(op1, nodoFinalViejo, nodoFinalNuevo, "!");  // Agregar nueva transicion
+
+        nodoFinalViejo.setFinal(false);  // Eliminar bandera de nodo final en nodo viejo
+        nodoFinalNuevo.setFinal(true);  // Agregar bandera de nodo final
+        setStateCounter(nuevoID + 1);  // Cambiar conteo de estados
+
+        return op1;
     }
 
 
