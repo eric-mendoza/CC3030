@@ -114,7 +114,7 @@ public class DirectedGraph {
         @Override
         public int compareTo(NodeClass o) {
             Integer id1 = this.getId();
-            Integer id2 = this.getId();
+            Integer id2 = o.getId();
             return id1.compareTo(id2);
         }
     }

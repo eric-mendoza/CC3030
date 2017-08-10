@@ -25,18 +25,20 @@ public class Main {
          */
         RegExToNFA regExToNFA = new RegExToNFA();  // Conversor de regex a NFA
         NFAToDFA nfaToDFA = new NFAToDFA();
+        HopcroftMinimizator hopcroftMinimizator = new HopcroftMinimizator();
         long startTime, finishTime;
 
         /**
          * Normaliza la expresion a evaluar y la convierte a postfix
          */
-        regex = RegExConverter.infixToPostfix(regex);
+
         //System.out.println(regex);
 
         /**
          * Evalua la expresion obteniendo asi un NFA como resultado
          */
         startTime = System.nanoTime();  // Tomar tiempo
+        regex = RegExConverter.infixToPostfix(regex);
         DirectedGraph nfa = regExToNFA.evaluate(regex);
         finishTime = System.nanoTime();  // Tomar tiempo
         double tiempo = (finishTime - startTime) / 1000000.0;  // Diferencia
@@ -102,9 +104,11 @@ public class Main {
          */
         AutomataRenderer.renderAutomata(dfa, "DFA");
 
+
         /**
          * Simular NFA
          */
+        /*
         // Crear simulador
         Simulator simulator = new Simulator(nfaToDFA);
         String continuar = "1";
@@ -130,11 +134,12 @@ public class Main {
             // Preguntar si desea simular otro
             System.out.println("Si desea simular otra cadena, ingrese \'1\': ");
             continuar = scanner.next();
-        }
+        } */
 
         /**
-         * Simular DFA
+         * Simular DFA no simplificado
          */
+        /*
         // Crear simulador
         continuar = "1";
 
@@ -159,6 +164,22 @@ public class Main {
             // Preguntar si desea simular otro
             System.out.println("Si desea simular otra cadena, ingrese \'1\': ");
             continuar = scanner.next();
-        }
+        }*/
+
+        /**
+         * Simplificar DFA
+         */
+        startTime = System.nanoTime();
+        DirectedGraph dfaSimplificado = hopcroftMinimizator.minimizateDFA(dfa);
+        finishTime = System.nanoTime();  // Tomar tiempo
+
+        // Mostrar tiempo
+        tiempo = (finishTime - startTime) / 1000000.0;
+        System.out.println("\t- Tiempo de simplicacion de dfa: " + tiempo + " milisegundos\n");
+
+        /**
+         * Mostrar en pantalla el dfa minimizado
+         */
+        AutomataRenderer.renderAutomata(dfaSimplificado, "DFA minimizado");
     }
 }

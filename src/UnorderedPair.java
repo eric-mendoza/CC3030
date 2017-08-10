@@ -64,6 +64,18 @@ public class UnorderedPair<E extends Comparable<E>> implements Comparable<Unorde
         return true;
     }
 
+    public boolean semiEquals(UnorderedPair<E> otherObject) {
+        // Primer elemento
+        E firstE = getFirst();
+        if (firstE.equals(otherObject.getFirst())) return true;  // Comparar 1 con 1
+        if (firstE.equals(otherObject.getSecond())) return true;  // Comparar 1 con 2
+
+        E secondE = getSecond();
+        // Comparar 2 con 1
+        return secondE.equals(otherObject.getFirst()) || secondE.equals(otherObject.getSecond());
+
+    }
+
     public int compareTo(UnorderedPair<E> o) {
         int firstCmp = first.compareTo(o.first);
         if (firstCmp != 0)
