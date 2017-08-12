@@ -1,5 +1,4 @@
-import com.sun.org.apache.xalan.internal.xsltc.runtime.Node;
-
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Stack;
 
@@ -14,8 +13,16 @@ public class RegExToDFA {
      * Atributos
      */
     private BinaryTree arbolSintactico;
+    private HashMap<Integer, BinaryTree> leafNodes;
     private HashSet<String> alfabeto = new HashSet<String>();
     private int positionCounter;
+
+    /**
+     * Constructor
+     */
+    public RegExToDFA() {
+        this.leafNodes = new HashMap<Integer, BinaryTree>();
+    }
 
     /**
      * Metodo que tiene como objetivo guiar el algoritmo de construccion directa del dfa
@@ -26,13 +33,14 @@ public class RegExToDFA {
         regex = augmentateRegex(regex);  // Agregar eof al regex
         regex = RegExConverter.infixToPostfix(regex);  // Convertir a postfix
         arbolSintactico = generateSyntaxTree(regex);  // Crear arbol sintacticao
-        setPropiedadesArbolSintactico(arbolSintactico);
+        setPropiedadesArbolSintactico(arbolSintactico);  // Configura firstPos, lastPos y nullable
 
         return null;
     }
 
+
     /**
-     * Metodo que tiene como objetivo setear lastpos, firstpos y nullable de las propiedades del arbol sintactico
+     * Metodo que tiene como objetivo setear lastpos, followPos, firstpos y nullable de las propiedades del arbol sintactico
      */
     private void setPropiedadesArbolSintactico(BinaryTree tree) {
         if (tree.isLeaf()) {
@@ -110,6 +118,18 @@ public class RegExToDFA {
 
                     // Nullable
                     nullable = rightChild.isNullable() && leftChild.isNullable();
+
+                    // Set FollowPos
+                    HashSet<Integer> leftChildLastPos = leftChild.getLastPos();
+                    HashSet<Integer> rightChildFirstPos = rightChild.getFirstPos();
+                    BinaryTree nodoSignificativo;
+
+                    for (Integer position: leftChildLastPos){
+                        // Obtener nodo significativo
+                        nodoSignificativo = leafNodes.get(position);
+                        nodoSignificativo.setFollowPos(rightChildFirstPos);
+                    }
+
                     break;
 
                 case '*':
@@ -121,6 +141,19 @@ public class RegExToDFA {
 
                     // Nullable
                     nullable = true;
+
+                    // Set FollowPos
+                    HashSet<Integer> childLastPos = leftChild.getLastPos();
+                    HashSet<Integer> childFirstPos = leftChild.getFirstPos();
+                    BinaryTree nodoSignificative;
+
+                    for (Integer position: childLastPos){
+                        // Obtener nodo significativo
+                        nodoSignificative = leafNodes.get(position);
+
+                        // Agregar posiciones
+                        nodoSignificative.setFollowPos(childFirstPos);
+                    }
                     break;
             }
 
@@ -153,8 +186,10 @@ public class RegExToDFA {
                 String letra = String.valueOf(c);
                 result = new BinaryTree(letra);  // Crear nodo hoja
                 if (!letra.equals("!")) {
-                    result.setPosition(getPositionCounter());  // Setear posicion en arbol
+                    int posicion = getPositionCounter();
+                    result.setPosition(posicion);  // Setear posicion en arbol
                     alphabet.add(letra);  // Agregar letra a alfabeto
+                    leafNodes.put(posicion, result);  // Agregar a mapa de nodos
                 }
 
                 stack.push(result);

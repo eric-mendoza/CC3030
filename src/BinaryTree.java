@@ -267,6 +267,10 @@ public class BinaryTree {
         this.followPos.addAll(followPos);
     }
 
+    public void addToFollowPos(Integer position){
+        this.followPos.add(position);
+    }
+
     public HashSet<Integer> getLastPos() {
         return lastPos;
     }
