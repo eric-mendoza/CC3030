@@ -1,10 +1,9 @@
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Stack;
 
 /**
- * La presente clase tiene como objetivo crear un automata a partir de un regex
+ * La presente clase tiene como objetivo crear un automata no determinista a partir de un regex
  * @author Eric Mendoza
  * @version 1.0
  * @since 23/07/207
@@ -19,22 +18,24 @@ public class RegExToNFA {
 
     /**
      * Sirve para determinar cuando se ha encontrado un operador que necesita un solo operando
+     *
      * @param c caracter a evaluar
      * @return verdadero: si es un operador, falso: si no lo es
      */
-    private static boolean isOneOperator(char c) { // Ver si es una uno-operacion
+    public static boolean isOneOperator(char c) { // Ver si es una uno-operacion
 
-        return c == '+'  ||  c == '*'  ||  c == '?';
+        return c == '+' || c == '*' || c == '?';
 
     }
 
 
     /**
      * Sirve para determinar cuando se ha encontrado un operador que necesita dos operandos
+     *
      * @param c caracter a evaluar
      * @return verdadero: si es un operador, falso: si no lo es
      */
-    private static boolean isTwoOperator(char c) { // Tell whether c is an operator.
+    public static boolean isTwoOperator(char c) { // Tell whether c is an operator.
 
         return c == '.' || c == '|';
 
@@ -43,21 +44,22 @@ public class RegExToNFA {
 
     /**
      * Funcion que evalua las uno-operaciones
+     *
      * @param operation operacion que se realizara (concatenacion, or, ...)
-     * @param op1 primer estado a operar
+     * @param op1       primer estado a operar
      * @return retorna un grafo
      */
     private DirectedGraph evalSingleOp(char operation, DirectedGraph op1) {
         DirectedGraph result = new DirectedGraph();
 
         switch (operation) {
-            case ADD :
+            case ADD:
                 result = addGraphs(op1);
                 break;
-            case QMARK :
+            case QMARK:
                 result = qMarkGraphs(op1);
                 break;
-            case STAR :
+            case STAR:
                 result = starGraphs(op1);
                 break;
         }
@@ -68,19 +70,20 @@ public class RegExToNFA {
 
     /**
      * Funcion que evalua las dos-operaciones
+     *
      * @param operation operacion que se realizara (concatenacion, or, ...)
-     * @param op1 primer estado a operar
-     * @param op2 segundo estado a operar
+     * @param op1       primer estado a operar
+     * @param op2       segundo estado a operar
      * @return retorna un grafo
      */
     private DirectedGraph evalDoubleOp(char operation, DirectedGraph op1, DirectedGraph op2) {
         DirectedGraph result = new DirectedGraph();
 
         switch (operation) {
-            case CONCAT :
+            case CONCAT:
                 result = concatenateGraphs(op1, op2);
                 break;
-            case OR :
+            case OR:
                 result = orGraphs(op1, op2);
                 break;
         }
@@ -91,10 +94,11 @@ public class RegExToNFA {
 
     /**
      * Realiza la operacion '+' de un automata
+     *
      * @param op1 automata a aplicar operacion
      * @return nuevo automata
      */
-    private DirectedGraph addGraphs(DirectedGraph op1){
+    private DirectedGraph addGraphs(DirectedGraph op1) {
         // Variables a utilizar
         DirectedGraph.NodeClass nodoInicialViejo, nodoFinalViejo, nodoInicialNuevo, nodoFinalNuevo;
 
@@ -131,10 +135,11 @@ public class RegExToNFA {
 
     /**
      * Realiza la operacion '?' de un automata
+     *
      * @param op1 automata a aplicar operacion
      * @return nuevo automata
      */
-    private DirectedGraph qMarkGraphs(DirectedGraph op1){
+    private DirectedGraph qMarkGraphs(DirectedGraph op1) {
         // Variables a utilizar
         DirectedGraph.NodeClass nodoInicialViejo, nodoFinalViejo, nodoInicialNuevo, nodoFinalNuevo;
 
@@ -173,10 +178,11 @@ public class RegExToNFA {
 
     /**
      * Realiza la operacion '*' de un automata
+     *
      * @param op1 automata a aplicar operacion
      * @return nuevo automata
      */
-    private DirectedGraph starGraphs(DirectedGraph op1){
+    private DirectedGraph starGraphs(DirectedGraph op1) {
         // Variables a utilizar
         DirectedGraph.NodeClass nodoInicialViejo, nodoFinalViejo, nodoInicialNuevo, nodoFinalNuevo;
 
@@ -215,11 +221,12 @@ public class RegExToNFA {
 
     /**
      * Realiza la concatenacion de dos automatas
+     *
      * @param op1 primer automata a concatenar
      * @param op2 segundo automata a concatenar
      * @return nuevo automata
      */
-    private DirectedGraph concatenateGraphs(DirectedGraph op1, DirectedGraph op2){
+    private DirectedGraph concatenateGraphs(DirectedGraph op1, DirectedGraph op2) {
         // Obtener nodos de segundo automata 2
         LinkedList<DirectedGraph.NodeClass> nodos2 = op2.getAllNodes();
 
@@ -231,19 +238,17 @@ public class RegExToNFA {
 
 
         // Copiar cada nodo a automata 1 sin copiar nodo inicial anterior
-        for (DirectedGraph.NodeClass i: nodos2) {
-            if (!i.isStart()){
+        for (DirectedGraph.NodeClass i : nodos2) {
+            if (!i.isStart()) {
                 op1.addNode(op1, i);
             }
         }
 
         // Copiar cada transicion a automata 1 cambiando la transicion del nodo inicial anterior
-        for (DirectedGraph.edgeContents i: edges2) {
-            if (!i.getStartingNode().isStart()){
+        for (DirectedGraph.edgeContents i : edges2) {
+            if (!i.getStartingNode().isStart()) {
                 op1.addEdges(op1, i);
-            }
-
-            else {
+            } else {
                 i.setStartingNode(op1FinalNode);  // Cambiar nodo inicial de transicion
                 op1FinalNode.setFinal(false);  // Quitarle propiedad de nodo final a op1FinalNode
                 op1.addEdges(op1, i);  // Agregar a nuevo automata
@@ -260,11 +265,12 @@ public class RegExToNFA {
 
     /**
      * Realiza el OR de dos automatas
+     *
      * @param op1 primer automata a operar
      * @param op2 segundo automata a operar
      * @return nuevo automata
      */
-    private DirectedGraph orGraphs(DirectedGraph op1, DirectedGraph op2){
+    private DirectedGraph orGraphs(DirectedGraph op1, DirectedGraph op2) {
         // Obtener nodos de segundo automata
         LinkedList<DirectedGraph.NodeClass> nodos2 = op2.getAllNodes();
 
@@ -272,12 +278,12 @@ public class RegExToNFA {
         LinkedList<DirectedGraph.edgeContents> edges2 = op2.getEdges();
 
         // Copiar cada nodo a automata 1
-        for (DirectedGraph.NodeClass i: nodos2) {
+        for (DirectedGraph.NodeClass i : nodos2) {
             op1.addNode(op1, i);
         }
 
         // Copiar cada transicion a automata 1
-        for (DirectedGraph.edgeContents i: edges2) {
+        for (DirectedGraph.edgeContents i : edges2) {
             op1.addEdges(op1, i);
         }
 
@@ -324,10 +330,11 @@ public class RegExToNFA {
 
     /**
      * Crea un automata simple a partir de una transicion indicada
+     *
      * @param transition unica transicion del nuevo automata
      * @return un automata de una sola transicion con dos nodos
      */
-    private DirectedGraph createSimpleGraph(String transition){
+    private DirectedGraph createSimpleGraph(String transition) {
         DirectedGraph result = new DirectedGraph();
 
         // Agregar estados
@@ -345,6 +352,7 @@ public class RegExToNFA {
 
     /**
      * Funcion para evaluar una expresion regular en postfix
+     *
      * @param expr expresion regular en postfix
      * @return retorna el grafo del automata
      */
@@ -360,16 +368,14 @@ public class RegExToNFA {
                 op1 = stack.pop();
                 result = evalDoubleOp(c, op1, op2);
                 stack.push(result);
-            }
-            else if (isOneOperator(c)){
+            } else if (isOneOperator(c)) {
                 op1 = stack.pop();
                 result = evalSingleOp(c, op1);
                 stack.push(result);
-            }
-            else {
+            } else {
                 stack.push(createSimpleGraph(String.valueOf(c)));
                 String letra = String.valueOf(c);
-                if (!letra.equals("!")){
+                if (!letra.equals("!")) {
                     alphabet.add(letra);  // Agregar letra a alfabeto
                 }
             }
@@ -383,6 +389,7 @@ public class RegExToNFA {
 
     /**
      * Devuelve el contador de estados, el cual indica el numero de estados que se han estado creando
+     *
      * @return el identificador del siguiente estado
      */
     private int getStateCounter() {
@@ -392,48 +399,10 @@ public class RegExToNFA {
 
     /**
      * Sirve para aumentar contador de estados
+     *
      * @param stateCounter cambio en numero
      */
     private void setStateCounter(int stateCounter) {
         this.stateCounter = stateCounter;
     }
-
-    /**
-     * Toma un automata y crea otro nuevo con nodos y transiciones con mismo ID
-     * @param a automata a clonar
-     * @return nuevo automata
-     */
-    private DirectedGraph duplicateGraph(DirectedGraph a){
-        DirectedGraph a2 = new DirectedGraph();
-        // Obtener nodos de automata a clonar
-        LinkedList<DirectedGraph.NodeClass> nodos = a.getAllNodes();
-
-        // Obtener transiciones automata a clonar
-        LinkedList<DirectedGraph.edgeContents> edges = a.getEdges();
-
-        // Crear un hash para guardar index viejo y nuevo para cada nodo
-        HashMap<Integer, Integer> oldToNewIndexMap = new HashMap<Integer, Integer>();  // Devuelve el nuevo indice segun viejo
-        int nuevoID;
-
-        // Copiar cada nodo a copia automata con nuevos indices
-        for (DirectedGraph.NodeClass i: nodos) {
-            nuevoID = getStateCounter();  // Obtener siguiente nombre de estado
-            oldToNewIndexMap.put(i.getId(), nuevoID);  // Guardar hash para ID
-
-            a2.addNode(a2, nuevoID, i.isStart(), i.isFinal());  // Crear nuevo nodo
-
-            setStateCounter(nuevoID + 1);  // Actualizar estados utilizados
-
-        }
-
-        // Copiar cada transicion a copia automata 1
-        DirectedGraph.NodeClass startingNode, finishNode;
-        for (DirectedGraph.edgeContents i: edges) {
-            startingNode = a2.getParticularNode(oldToNewIndexMap.get(i.getStartingNode().getId()));  // Obtener nodo inicial utilizando su ID viejo utilizando el mapa
-            finishNode = a2.getParticularNode(oldToNewIndexMap.get(i.getFinishingNode().getId()));  // Obtener nodo inicial utilizando su ID viejo utilizando el mapa
-            a2.addEdges(a2, startingNode, finishNode, i.getTransition());
-        }
-        return a2;
-    }
-
 }

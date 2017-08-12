@@ -70,7 +70,7 @@ public class RegExConverter {
      * @return postfix notation
      */
     public static String infixToPostfix(String regex) {
-        String postfix = new String();
+        String postfix = "";
 
         Stack<Character> stack = new Stack<Character>();
         String formattedRegEx = formatRegEx(regex);

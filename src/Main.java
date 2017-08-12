@@ -17,8 +17,8 @@ public class Main {
          */
         Scanner scanner = new Scanner(System.in);
         System.out.println("Ingrese su expresion regular (*|?+):");
-        String regex;
-        regex = scanner.next();
+        String regex, inputRegex;
+        inputRegex = scanner.next();
 
         /**
          * Crear objetos para procesos
@@ -26,22 +26,28 @@ public class Main {
         RegExToNFA regExToNFA = new RegExToNFA();  // Conversor de regex a NFA
         NFAToDFA nfaToDFA = new NFAToDFA();
         HopcroftMinimizator hopcroftMinimizator = new HopcroftMinimizator();
+        RegExToDFA regExToDFA = new RegExToDFA();
         long startTime, finishTime;
 
         /**
-         * Normaliza la expresion a evaluar y la convierte a postfix
+         * Normalizar expresion a evaluar y conviertir a postfix
          */
-
-        //System.out.println(regex);
+        regex = RegExConverter.infixToPostfix(inputRegex);
+        System.out.println(regex);
 
         /**
-         * Evalua la expresion obteniendo asi un NFA como resultado
+         * Crear NFA
          */
         startTime = System.nanoTime();  // Tomar tiempo
-        regex = RegExConverter.infixToPostfix(regex);
         DirectedGraph nfa = regExToNFA.evaluate(regex);
         finishTime = System.nanoTime();  // Tomar tiempo
+
         double tiempo = (finishTime - startTime) / 1000000.0;  // Diferencia
+        System.out.println("Tiempo en crear NFA: ");
+        System.out.println("\t- " + tiempo + " milisegundos");
+
+        // Mostrar en pantalla el automata generado
+        //AutomataRenderer.renderAutomata(nfa, "NFA");
 
         /**
          * Imprimir las caracteristicas del automata
@@ -50,7 +56,7 @@ public class Main {
         try {
             pW = new PrintWriter(new File("NFA.txt"));
             pW.printf(nfa.automataDescription());
-            pW.printf("\nTiempo en generar NFA: " + tiempo + " milisegundos");
+            pW.printf("Tiempo en generar NFA:\n\t- " + tiempo + " milisegundos\n");
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -59,16 +65,6 @@ public class Main {
             }
         }
 
-        /**
-         * Ultimo tiempo generacion NFA
-         */
-        System.out.println("Tiempo en crear NFA: ");
-        System.out.println(tiempo + " milisegundos");
-
-        /**
-         * Mostrar en pantalla el automata generado
-         */
-        //AutomataRenderer.renderAutomata(nfa, "NFA");
 
         /**
          * Transformar de NFA -> DFA
@@ -76,6 +72,11 @@ public class Main {
         startTime = System.nanoTime();
         DirectedGraph dfa = nfaToDFA.convert(nfa);
         finishTime = System.nanoTime();
+        System.out.println("Tiempo en transformar NFA a DFA: ");
+        System.out.println("\t- " + tiempo + " milisegundos");
+
+        //Mostrar en pantalla el dfa
+        //AutomataRenderer.renderAutomata(dfa, "DFA");
 
         /**
          * Descripcion de dfa
@@ -84,7 +85,7 @@ public class Main {
         try {
             pW = new PrintWriter(new File("DFA.txt"));
             pW.printf(dfa.automataDescription());
-            pW.printf("\nTiempo en transformar NFA a DFA: " + tiempo + " milisegundos");
+            pW.printf("Tiempo en transformar NFA a DFA:\n\t- " + tiempo + " milisegundos\n");
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -92,17 +93,6 @@ public class Main {
                 pW.close();
             }
         }
-
-        /**
-         * Ultimo tiempo generacion NFA
-         */
-        System.out.println("Tiempo en transformar NFA a DFA: ");
-        System.out.println(tiempo + " milisegundos");
-
-        /**
-         * Mostrar en pantalla el dfa
-         */
-        AutomataRenderer.renderAutomata(dfa, "DFA");
 
 
         /**
@@ -167,6 +157,20 @@ public class Main {
         }*/
 
         /**
+         * Construccion directa de DFA
+         */
+        startTime = System.nanoTime();
+        DirectedGraph dfaDirecto = regExToDFA.createDFA(inputRegex);
+        finishTime = System.nanoTime();  // Tomar tiempo
+
+        // Mostrar tiempo
+        tiempo = (finishTime - startTime) / 1000000.0;
+        System.out.println("Tiempo de creacion directa de dfa:\n\t- " + tiempo + " milisegundos");
+
+        // Mostrar en pantalla el dfa directo
+        //AutomataRenderer.renderAutomata(dfaDirecto, "DFA por construccion directa");
+
+        /**
          * Simplificar DFA
          */
         startTime = System.nanoTime();
@@ -175,11 +179,9 @@ public class Main {
 
         // Mostrar tiempo
         tiempo = (finishTime - startTime) / 1000000.0;
-        System.out.println("\t- Tiempo de simplicacion de dfa: " + tiempo + " milisegundos\n");
+        System.out.println("Tiempo de simplicacion de dfa:\n\t- " + tiempo + " milisegundos");
 
-        /**
-         * Mostrar en pantalla el dfa minimizado
-         */
-        AutomataRenderer.renderAutomata(dfaSimplificado, "DFA minimizado");
+        // Mostrar en pantalla el dfa minimizado
+        //AutomataRenderer.renderAutomata(dfaSimplificado, "DFA minimizado");
     }
 }
