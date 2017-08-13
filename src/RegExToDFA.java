@@ -35,8 +35,6 @@ public class RegExToDFA {
      * @return un automata finito determinista
      */
     public DirectedGraph createDFA(String regex){
-        regex = augmentateRegex(regex);  // Agregar eof al regex
-        regex = RegExConverter.infixToPostfix(regex);  // Convertir a postfix
         arbolSintactico = generateSyntaxTree(regex);  // Crear arbol sintacticao
         setPropiedadesArbolSintactico(arbolSintactico);  // Configura firstPos, lastPos y nullable
         createDTransitions();

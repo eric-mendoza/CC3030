@@ -3,10 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="73a7f1bc-aef7-49d8-b569-37558a8a07c0" name="Default" comment="">
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Dstate.java" afterPath="$PROJECT_DIR$/src/Dstate.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/HopcroftMinimizator.java" afterPath="$PROJECT_DIR$/src/HopcroftMinimizator.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/Main.java" afterPath="$PROJECT_DIR$/src/Main.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/NFAToDFA.java" afterPath="$PROJECT_DIR$/src/NFAToDFA.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/RegExToDFA.java" afterPath="$PROJECT_DIR$/src/RegExToDFA.java" />
     </list>
     <ignored path="Laboratorio2.iws" />
@@ -33,35 +30,29 @@
       <file leaf-file-name="Main.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/Main.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="192">
-              <caret line="170" column="8" selection-start-line="170" selection-start-column="8" selection-end-line="170" selection-end-column="8" />
+            <state relative-caret-position="527">
+              <caret line="35" column="10" selection-start-line="35" selection-start-column="10" selection-end-line="35" selection-end-column="10" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="RegExToDFA.java" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/RegExToDFA.java">
+      <file leaf-file-name="DFA.txt" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DFA.txt">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="566">
-              <caret line="41" column="29" selection-start-line="41" selection-start-column="29" selection-end-line="41" selection-end-column="29" />
-              <folding>
-                <element signature="imports" expanded="true" />
-                <element signature="e#450#458#0" expanded="true" />
-                <element signature="e#599#616#0" expanded="true" />
-                <element signature="e#713#726#0" expanded="true" />
-                <element signature="e#1963#1989#0" expanded="true" />
-                <element signature="e#3375#3384#0" expanded="true" />
-                <element signature="e#7396#7405#0" expanded="true" />
-                <element signature="e#8343#8352#0" expanded="true" />
-                <element signature="e#8410#8419#0" expanded="true" />
-                <element signature="e#9593#9602#0" expanded="true" />
-                <element signature="e#9656#9665#0" expanded="true" />
-                <element signature="e#13062#13074#0" expanded="true" />
-                <element signature="e#13161#13169#0" expanded="true" />
-                <element signature="e#14694#14695#0" expanded="true" />
-                <element signature="e#14748#14749#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="102">
+              <caret line="6" column="12" selection-start-line="6" selection-start-column="12" selection-end-line="6" selection-end-column="12" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="DFA_Construccion_directa.txt" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DFA_Construccion_directa.txt">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="102">
+              <caret line="6" column="11" selection-start-line="6" selection-start-column="11" selection-end-line="6" selection-end-column="11" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -69,13 +60,23 @@
       <file leaf-file-name="NFAToDFA.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/NFAToDFA.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="362">
-              <caret line="290" column="5" selection-start-line="259" selection-start-column="4" selection-end-line="290" selection-end-column="5" />
+            <state relative-caret-position="306">
+              <caret line="26" column="0" selection-start-line="26" selection-start-column="0" selection-end-line="26" selection-end-column="0" />
               <folding>
                 <element signature="e#529#562#0" expanded="true" />
                 <element signature="e#7324#7349#0" expanded="true" />
                 <element signature="e#11335#11377#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="DFA_Minimo.txt" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/DFA_Minimo.txt">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="102">
+              <caret line="6" column="10" selection-start-line="6" selection-start-column="10" selection-end-line="6" selection-end-column="10" />
+              <folding />
             </state>
           </provider>
         </entry>
@@ -139,6 +140,9 @@
         <option value="$PROJECT_DIR$/src/HopcroftMinimizator.java" />
         <option value="$PROJECT_DIR$/src/NFAToDFA.java" />
         <option value="$PROJECT_DIR$/src/RegExToDFA.java" />
+        <option value="$PROJECT_DIR$/DFA.txt" />
+        <option value="$PROJECT_DIR$/DFA_Construccion_directa.txt" />
+        <option value="$PROJECT_DIR$/DFA_Minimo.txt" />
         <option value="$PROJECT_DIR$/src/Main.java" />
       </list>
     </option>
@@ -682,7 +686,7 @@
       <updated>1502158402849</updated>
       <workItem from="1502158404394" duration="4445000" />
       <workItem from="1502210906998" duration="38537000" />
-      <workItem from="1502521401241" duration="19010000" />
+      <workItem from="1502521401241" duration="27273000" />
     </task>
     <task id="LOCAL-00001" summary="- Se arreglo kleene plus&#10;- Se agrego una clase de par no ordenado&#10;- Se comenzo con algoritmo de hopcroft">
       <created>1502174741071</created>
@@ -719,11 +723,18 @@
       <option name="project" value="LOCAL" />
       <updated>1502579397008</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="- Se termino algoritmo por construccion directa">
+      <created>1502591601493</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1502591601493</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="61992000" />
+    <option name="totallyTimeSpent" value="70255000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1382" height="744" extended-state="6" />
@@ -758,6 +769,36 @@
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
+    <layout-to-restore>
+      <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Capture Tool" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Designer" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
+      <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="UI Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.39443535" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.019639935" sideWeight="0.5" order="12" side_tool="false" content_ui="tabs" />
+      <window_info id="Palette&#9;" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Capture Analysis" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.33387887" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.18305598" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Run with VisualVM" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="10" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="4" side_tool="true" content_ui="tabs" />
+      <window_info id="Debug with VisualVM" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="11" side_tool="false" content_ui="tabs" />
+    </layout-to-restore>
   </component>
   <component name="Vcs.Log.UiProperties">
     <option name="RECENTLY_FILTERED_USER_GROUPS">
@@ -776,7 +817,8 @@
     <MESSAGE value="- Algoritmo de Hopcroft sin bugs" />
     <MESSAGE value="- Arbol sintactico&#10;- lastPos, firstPos, Nullable" />
     <MESSAGE value="- FollowPos" />
-    <option name="LAST_COMMIT_MESSAGE" value="- FollowPos" />
+    <MESSAGE value="- Se termino algoritmo por construccion directa" />
+    <option name="LAST_COMMIT_MESSAGE" value="- Se termino algoritmo por construccion directa" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -787,8 +829,14 @@
           <properties />
           <option name="timeStamp" value="15" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/NFAToDFA.java</url>
+          <line>26</line>
+          <properties />
+          <option name="timeStamp" value="26" />
+        </line-breakpoint>
       </breakpoints>
-      <option name="time" value="26" />
+      <option name="time" value="27" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -822,17 +870,17 @@
             <element signature="e#450#458#0" expanded="true" />
             <element signature="e#599#616#0" expanded="true" />
             <element signature="e#713#726#0" expanded="true" />
-            <element signature="e#1963#1989#0" expanded="true" />
-            <element signature="e#3375#3384#0" expanded="true" />
-            <element signature="e#7396#7405#0" expanded="true" />
-            <element signature="e#8343#8352#0" expanded="true" />
-            <element signature="e#8410#8419#0" expanded="true" />
-            <element signature="e#9593#9602#0" expanded="true" />
-            <element signature="e#9656#9665#0" expanded="true" />
-            <element signature="e#13062#13074#0" expanded="true" />
-            <element signature="e#13161#13169#0" expanded="true" />
-            <element signature="e#14694#14695#0" expanded="true" />
-            <element signature="e#14748#14749#0" expanded="true" />
+            <element signature="e#1820#1846#0" expanded="true" />
+            <element signature="e#3232#3241#0" expanded="true" />
+            <element signature="e#7253#7262#0" expanded="true" />
+            <element signature="e#8200#8209#0" expanded="true" />
+            <element signature="e#8267#8276#0" expanded="true" />
+            <element signature="e#9450#9459#0" expanded="true" />
+            <element signature="e#9513#9522#0" expanded="true" />
+            <element signature="e#12919#12931#0" expanded="true" />
+            <element signature="e#13018#13026#0" expanded="true" />
+            <element signature="e#14551#14552#0" expanded="true" />
+            <element signature="e#14605#14606#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -917,13 +965,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/DFA.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-        </state>
-      </provider>
-    </entry>
     <entry file="jar://C:/Program Files/Java/jdk1.8.0_45/src.zip!/java/util/HashMap.java">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="114">
@@ -941,13 +982,6 @@
           <folding>
             <element signature="e#7437#7438#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/NFA.txt">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-357">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
         </state>
       </provider>
     </entry>
@@ -1080,10 +1114,66 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/NFA.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/RegExToDFA.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="255">
+          <caret line="36" column="49" selection-start-line="36" selection-start-column="49" selection-end-line="36" selection-end-column="49" />
+          <folding>
+            <element signature="imports" expanded="true" />
+            <element signature="e#450#458#0" expanded="true" />
+            <element signature="e#599#616#0" expanded="true" />
+            <element signature="e#713#726#0" expanded="true" />
+            <element signature="e#1820#1846#0" expanded="true" />
+            <element signature="e#3232#3241#0" expanded="true" />
+            <element signature="e#7253#7262#0" expanded="true" />
+            <element signature="e#8200#8209#0" expanded="true" />
+            <element signature="e#8267#8276#0" expanded="true" />
+            <element signature="e#9450#9459#0" expanded="true" />
+            <element signature="e#9513#9522#0" expanded="true" />
+            <element signature="e#12919#12931#0" expanded="true" />
+            <element signature="e#13018#13026#0" expanded="true" />
+            <element signature="e#14551#14552#0" expanded="true" />
+            <element signature="e#14605#14606#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DFA.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="102">
+          <caret line="6" column="12" selection-start-line="6" selection-start-column="12" selection-end-line="6" selection-end-column="12" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DFA_Minimo.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="102">
+          <caret line="6" column="10" selection-start-line="6" selection-start-column="10" selection-end-line="6" selection-end-column="10" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/DFA_Construccion_directa.txt">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="102">
+          <caret line="6" column="11" selection-start-line="6" selection-start-column="11" selection-end-line="6" selection-end-column="11" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/NFAToDFA.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="362">
-          <caret line="290" column="5" selection-start-line="259" selection-start-column="4" selection-end-line="290" selection-end-column="5" />
+        <state relative-caret-position="306">
+          <caret line="26" column="0" selection-start-line="26" selection-start-column="0" selection-end-line="26" selection-end-column="0" />
           <folding>
             <element signature="e#529#562#0" expanded="true" />
             <element signature="e#7324#7349#0" expanded="true" />
@@ -1092,34 +1182,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/RegExToDFA.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="566">
-          <caret line="41" column="29" selection-start-line="41" selection-start-column="29" selection-end-line="41" selection-end-column="29" />
-          <folding>
-            <element signature="imports" expanded="true" />
-            <element signature="e#450#458#0" expanded="true" />
-            <element signature="e#599#616#0" expanded="true" />
-            <element signature="e#713#726#0" expanded="true" />
-            <element signature="e#1963#1989#0" expanded="true" />
-            <element signature="e#3375#3384#0" expanded="true" />
-            <element signature="e#7396#7405#0" expanded="true" />
-            <element signature="e#8343#8352#0" expanded="true" />
-            <element signature="e#8410#8419#0" expanded="true" />
-            <element signature="e#9593#9602#0" expanded="true" />
-            <element signature="e#9656#9665#0" expanded="true" />
-            <element signature="e#13062#13074#0" expanded="true" />
-            <element signature="e#13161#13169#0" expanded="true" />
-            <element signature="e#14694#14695#0" expanded="true" />
-            <element signature="e#14748#14749#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/Main.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="192">
-          <caret line="170" column="8" selection-start-line="170" selection-start-column="8" selection-end-line="170" selection-end-column="8" />
+        <state relative-caret-position="527">
+          <caret line="35" column="10" selection-start-line="35" selection-start-column="10" selection-end-line="35" selection-end-column="10" />
           <folding />
         </state>
       </provider>

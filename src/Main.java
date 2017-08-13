@@ -16,7 +16,7 @@ public class Main {
          * Pedir a usuario que ingrese un regex
          */
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Ingrese su expresion regular (*|?+):");
+        System.out.println("Ingrese su expresion regular para construccion directa(No se aceptan ? ni +):");
         String regex, inputRegex;
         inputRegex = scanner.next();
 
@@ -33,7 +33,7 @@ public class Main {
          * Normalizar expresion a evaluar y conviertir a postfix
          */
         regex = RegExConverter.infixToPostfix(inputRegex);
-        System.out.println(regex);
+        //System.out.println(regex);
 
         /**
          * Crear NFA
@@ -72,6 +72,7 @@ public class Main {
         startTime = System.nanoTime();
         DirectedGraph dfa = nfaToDFA.convert(nfa);
         finishTime = System.nanoTime();
+
         System.out.println("Tiempo en transformar NFA a DFA: ");
         System.out.println("\t- " + tiempo + " milisegundos");
 
@@ -159,8 +160,12 @@ public class Main {
         /**
          * Construccion directa de DFA
          */
+        // Procesar regex
+        regex = regExToDFA.augmentateRegex(inputRegex);  // Agregar eof al regex
+        regex = RegExConverter.infixToPostfix(regex);  // Convertir a postfix
+
         startTime = System.nanoTime();
-        DirectedGraph dfaDirecto = regExToDFA.createDFA(inputRegex);
+        DirectedGraph dfaDirecto = regExToDFA.createDFA(regex);
         finishTime = System.nanoTime();  // Tomar tiempo
 
         // Mostrar tiempo
@@ -168,20 +173,49 @@ public class Main {
         System.out.println("Tiempo de creacion directa de dfa:\n\t- " + tiempo + " milisegundos");
 
         // Mostrar en pantalla el dfa directo
-        AutomataRenderer.renderAutomata(dfaDirecto, "DFA por construccion directa");
+        //AutomataRenderer.renderAutomata(dfaDirecto, "DFA por construccion directa");
+
+        // Crear descripcion de documento
+        pW = null;
+        try {
+            pW = new PrintWriter(new File("DFA_Construccion_directa.txt"));
+            pW.printf(dfaDirecto.automataDescription());
+            pW.printf("Tiempo en generar DFA directamente de regex:\n\t- " + tiempo + " milisegundos\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (pW != null) {
+                pW.close();
+            }
+        }
 
         /**
          * Simplificar DFA
          */
         startTime = System.nanoTime();
-        DirectedGraph dfaSimplificado = hopcroftMinimizator.minimizateDFA(dfa);
+        DirectedGraph dfaSimplificado = hopcroftMinimizator.minimizateDFA(dfaDirecto);
         finishTime = System.nanoTime();  // Tomar tiempo
 
         // Mostrar tiempo
         tiempo = (finishTime - startTime) / 1000000.0;
-        System.out.println("Tiempo de simplicacion de dfa:\n\t- " + tiempo + " milisegundos");
+        System.out.println("Tiempo de simplicacion de DFA:\n\t- " + tiempo + " milisegundos");
 
         // Mostrar en pantalla el dfa minimizado
         //AutomataRenderer.renderAutomata(dfaSimplificado, "DFA minimizado");
+
+        // Crear descripcion de documento
+        pW = null;
+        try {
+            pW = new PrintWriter(new File("DFA_Minimo.txt"));
+            pW.printf(dfaSimplificado.automataDescription());
+            pW.printf("\nTiempo de simplicacion de DFA:\n\t- " + tiempo + " milisegundos\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (pW != null) {
+                pW.close();
+            }
+        }
+
     }
 }
