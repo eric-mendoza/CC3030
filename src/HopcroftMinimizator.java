@@ -15,7 +15,7 @@ public class HopcroftMinimizator {
     private HashSet<HashSet<DirectedGraph.NodeClass>> estadosNoMarcados;
     private NFAToDFA funciones;
     private LinkedList<DirectedGraph.NodeClass> estadosNoAnalizados;
-    private LinkedList<Dstate> dStates = new LinkedList<Dstate>();  // Futuros estados del DFA
+    private LinkedList<Dstate<DirectedGraph.NodeClass>> dStates = new LinkedList<Dstate<DirectedGraph.NodeClass>>();  // Futuros estados del DFA
     private LinkedList<Dtransition> dTransitions = new LinkedList<Dtransition>();  // Futuros transiciones del DFA
     private HashSet<String> alfabeto;
 
@@ -52,7 +52,7 @@ public class HopcroftMinimizator {
      */
     private void createDTransitions(DirectedGraph dfa) {
 
-        for (Dstate dEstado: dStates) {
+        for (Dstate<DirectedGraph.NodeClass> dEstado: dStates) {
             for (String input: alfabeto) {
                 // Obtener cualquiera de los estados del conjunto de estados
                 DirectedGraph.NodeClass nodo = dEstado.getConjuntoEstados().iterator().next();
@@ -61,7 +61,7 @@ public class HopcroftMinimizator {
                 DirectedGraph.NodeClass siguienteNodo = funciones.move(nodo, input);
 
                 // Ver a que dState se dirige
-                for (Dstate siguienteDEstado: dStates) {
+                for (Dstate<DirectedGraph.NodeClass> siguienteDEstado: dStates) {
                     HashSet<DirectedGraph.NodeClass> estados = siguienteDEstado.getConjuntoEstados();
                     if (estados.contains(siguienteNodo)){
                         dTransitions.add(new Dtransition(siguienteDEstado, dEstado, input));
@@ -88,9 +88,9 @@ public class HopcroftMinimizator {
             for (HashSet<DirectedGraph.NodeClass> par: estadosNoMarcados) {
                 // Crear un nuevo conjunto de estados equivalentes
                 HashSet<DirectedGraph.NodeClass> equivalentStates = new HashSet<DirectedGraph.NodeClass>();
-                Iterator elementos = par.iterator();
-                DirectedGraph.NodeClass estado1 = (DirectedGraph.NodeClass)elementos.next();
-                DirectedGraph.NodeClass estado2 = (DirectedGraph.NodeClass)elementos.next();
+                Iterator<DirectedGraph.NodeClass> elementos = par.iterator();
+                DirectedGraph.NodeClass estado1 = elementos.next();
+                DirectedGraph.NodeClass estado2 = elementos.next();
 
                 equivalentStates.add(estado1);
                 equivalentStates.add(estado2);
@@ -105,8 +105,8 @@ public class HopcroftMinimizator {
                     if (semiEquals(par, par2)){
                         // Obtener nodos
                         elementos = par2.iterator();
-                        estado1 = (DirectedGraph.NodeClass)elementos.next();
-                        estado2 = (DirectedGraph.NodeClass)elementos.next();
+                        estado1 = elementos.next();
+                        estado2 = elementos.next();
 
                         // Agregar a estados equivalentes
                         equivalentStates.add(estado1);
@@ -129,7 +129,7 @@ public class HopcroftMinimizator {
                 for (DirectedGraph.NodeClass nodo :equivalentStates) {
                     isFinal = isFinal || nodo.isFinal();
                 }
-                dStates.add(new Dstate(equivalentStates, equivalentStates.contains(dfa.getOneInicialNode()), isFinal));
+                dStates.add(new Dstate<DirectedGraph.NodeClass>(equivalentStates, equivalentStates.contains(dfa.getOneInicialNode()), isFinal));
 
 
                 // Parar loop debido a que se elimino un par
@@ -149,7 +149,7 @@ public class HopcroftMinimizator {
         for (DirectedGraph.NodeClass estadoNoAnalizado: estadosNoAnalizados) {
             HashSet<DirectedGraph.NodeClass> nodos = new HashSet<DirectedGraph.NodeClass>();
             nodos.add(estadoNoAnalizado);
-            dStates.add(new Dstate(nodos, estadoNoAnalizado.isStart(), estadoNoAnalizado.isFinal()));
+            dStates.add(new Dstate<DirectedGraph.NodeClass>(nodos, estadoNoAnalizado.isStart(), estadoNoAnalizado.isFinal()));
         }
     }
 
@@ -168,9 +168,9 @@ public class HopcroftMinimizator {
 
                 for (String input: alfabeto) {
                     // Obtener los siguientes estados por cada entrada
-                    Iterator elementos = par.iterator();
-                    DirectedGraph.NodeClass estado1 = (DirectedGraph.NodeClass)elementos.next();
-                    DirectedGraph.NodeClass estado2 = (DirectedGraph.NodeClass)elementos.next();
+                    Iterator<DirectedGraph.NodeClass> elementos = par.iterator();
+                    DirectedGraph.NodeClass estado1 = elementos.next();
+                    DirectedGraph.NodeClass estado2 = elementos.next();
                     DirectedGraph.NodeClass nodoSiguiente1 = funciones.move(estado1, input);
                     DirectedGraph.NodeClass nodoSiguiente2 = funciones.move(estado2, input);
 
@@ -231,10 +231,10 @@ public class HopcroftMinimizator {
         HashSet<String> alfabetoNuevo = alfabeto;
         minimalDFA.setAlphabet(alfabetoNuevo);
         int contador = 0;
-        HashMap<Dstate, Integer> convertDstateToState = new HashMap<Dstate, Integer>(dStates.size(), (float) 1.0);
+        HashMap<Dstate<DirectedGraph.NodeClass>, Integer> convertDstateToState = new HashMap<Dstate<DirectedGraph.NodeClass>, Integer>(dStates.size(), (float) 1.0);
 
         // Crear nodo con cada dstate
-        for (Dstate dstate: dStates){
+        for (Dstate<DirectedGraph.NodeClass> dstate: dStates){
             // Agregar nuevo nodo a dfa
             minimalDFA.addNode(minimalDFA, contador, dstate.isdStateInitial(), dstate.isdStateFinal());
 
@@ -261,20 +261,20 @@ public class HopcroftMinimizator {
     }
 
     public boolean semiEquals(HashSet<DirectedGraph.NodeClass> nodo1, HashSet<DirectedGraph.NodeClass> nodo2) {
-        Iterator elementos1 = nodo1.iterator();
-        Iterator elementos2 = nodo2.iterator();
+        Iterator<DirectedGraph.NodeClass> elementos1 = nodo1.iterator();
+        Iterator<DirectedGraph.NodeClass> elementos2 = nodo2.iterator();
 
         // Primer elemento
-        DirectedGraph.NodeClass firstE = (DirectedGraph.NodeClass) elementos1.next();
-        DirectedGraph.NodeClass firstE2 = (DirectedGraph.NodeClass) elementos2.next();
+        DirectedGraph.NodeClass firstE = elementos1.next();
+        DirectedGraph.NodeClass firstE2 = elementos2.next();
 
         // Comparar primeros
         if (firstE.compareTo(firstE2) == 0) return true;  // Comparar 1 con 1
-        DirectedGraph.NodeClass secondE2 = (DirectedGraph.NodeClass) elementos2.next();
+        DirectedGraph.NodeClass secondE2 = elementos2.next();
         if (firstE.compareTo(secondE2) == 0) return true;  // Comparar 1 con 2
 
         // Comparar 2 con 1
-        DirectedGraph.NodeClass secondE = (DirectedGraph.NodeClass) elementos1.next();
+        DirectedGraph.NodeClass secondE = elementos1.next();
         // Comparar 1 con 1
         return secondE.compareTo(firstE2) == 0 || secondE.compareTo(secondE2) == 0;
     }

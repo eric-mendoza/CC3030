@@ -13,7 +13,7 @@ public class NFAToDFA {
      * Atributos
      */
     private HashMap<DirectedGraph.NodeClass, HashSet<DirectedGraph.NodeClass>> eClosureStates = new HashMap<DirectedGraph.NodeClass, HashSet<DirectedGraph.NodeClass>>();
-    private LinkedList<Dstate> dStates = new LinkedList<Dstate>();  // Futuros estados del DFA
+    private LinkedList<Dstate<DirectedGraph.NodeClass>> dStates = new LinkedList<Dstate<DirectedGraph.NodeClass>>();  // Futuros estados del DFA
     private LinkedList<Dtransition> dTransitions = new LinkedList<Dtransition>();  // Futuros transiciones del DFA
 
     /**
@@ -165,8 +165,8 @@ public class NFAToDFA {
         boolean isFinal = nodosIniciales.contains(nodoFinalNfa);
 
         // Crear Destado inicial con conjuntos alcanzados por estado inicial
-        Dstate dEstadoInicial = new Dstate(nodosIniciales, true, isFinal);
-        Dstate estadoTemporalAgregado;
+        Dstate<DirectedGraph.NodeClass> dEstadoInicial = new Dstate<DirectedGraph.NodeClass>(nodosIniciales, true, isFinal);
+        Dstate<DirectedGraph.NodeClass> estadoTemporalAgregado;
 
         // Agregar Destado a conjunto de Destados
         dStates.add(dEstadoInicial);
@@ -175,7 +175,7 @@ public class NFAToDFA {
         HashSet<String> alphabeto = nfa.getAlphabet();
 
         // Crearn variable de estado no marcado
-        Dstate unmarkedState = dEstadoInicial;
+        Dstate<DirectedGraph.NodeClass> unmarkedState = dEstadoInicial;
 
         // Crear resto de Destados
         while (unmarkedState != null){
@@ -191,10 +191,10 @@ public class NFAToDFA {
                 isFinal = conjuntoEstadosAlcanzados.contains(nodoFinalNfa);
 
                 // Crear Dstate que se podria agregar
-                estadoTemporalAgregado = new Dstate(conjuntoEstadosAlcanzados, false, isFinal);
+                estadoTemporalAgregado = new Dstate<DirectedGraph.NodeClass>(conjuntoEstadosAlcanzados, false, isFinal);
 
                 // Verificar que estadoTemporalAgregado no exista en Destados
-                Dstate estadoTemporalEsUnico = getUniqueDstate(estadoTemporalAgregado);
+                Dstate<DirectedGraph.NodeClass> estadoTemporalEsUnico = getUniqueDstate(estadoTemporalAgregado);
 
                 // Agregar estadoTemporalAgregado si no existe
                 if (estadoTemporalEsUnico == null){
@@ -219,8 +219,8 @@ public class NFAToDFA {
      * Indica si existen estados sin marcar en el conjunto de estados del dfa
      * @return verdadero: si existen estados sin marcar; falso, si ya estan marcados todos los estados
      */
-    private Dstate existUnmarkedDstate(){
-        for (Dstate dEstado: dStates){
+    private Dstate<DirectedGraph.NodeClass> existUnmarkedDstate(){
+        for (Dstate<DirectedGraph.NodeClass> dEstado: dStates){
             if (!dEstado.isMarked()){
                 return dEstado;
             }
@@ -234,7 +234,7 @@ public class NFAToDFA {
      * @param startingState Estado desde el que se inicia
      * @param transition Transicion que provoca el cambio
      */
-    private void addDtransition(Dstate startingState, Dstate finishingState, String transition){
+    private void addDtransition(Dstate<DirectedGraph.NodeClass> startingState, Dstate<DirectedGraph.NodeClass> finishingState, String transition){
         Dtransition nuevaTransicion = new Dtransition(finishingState, startingState, transition);
         dTransitions.add(nuevaTransicion);
         startingState.addTransitions(nuevaTransicion);
@@ -245,8 +245,8 @@ public class NFAToDFA {
      * @param dstate estado a analizar
      * @return null, si no existe; dstate si existe
      */
-    private Dstate getUniqueDstate(Dstate dstate){
-        for (Dstate dstate2: dStates){
+    private Dstate<DirectedGraph.NodeClass> getUniqueDstate(Dstate<DirectedGraph.NodeClass> dstate){
+        for (Dstate<DirectedGraph.NodeClass> dstate2: dStates){
             // Si ya existe el estado, devolver dicho estado
             if (dstate2.equals(dstate)){
                 return dstate2;
@@ -261,10 +261,10 @@ public class NFAToDFA {
         DirectedGraph dfa = new DirectedGraph();
         dfa.setAlphabet(nfa.getAlphabet());
         int contador = 0;
-        HashMap<Dstate, Integer> convertDstateToState = new HashMap<Dstate, Integer>(dStates.size(), (float) 1.0);
+        HashMap<Dstate<DirectedGraph.NodeClass>, Integer> convertDstateToState = new HashMap<Dstate<DirectedGraph.NodeClass>, Integer>(dStates.size(), (float) 1.0);
 
         // Crear nodo con cada dstate
-        for (Dstate dstate: dStates){
+        for (Dstate<DirectedGraph.NodeClass> dstate: dStates){
             // Agregar nuevo nodo a dfa
             dfa.addNode(dfa, contador, dstate.isdStateInitial(), dstate.isdStateFinal());
 

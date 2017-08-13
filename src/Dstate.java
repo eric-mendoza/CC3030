@@ -7,11 +7,11 @@ import java.util.LinkedList;
  * @version 1.0
  * @since 5/08/207
  */
-public class Dstate {
+public class Dstate<E> {
     /**
      * Atributos
      */
-    private HashSet<DirectedGraph.NodeClass> conjuntoEstados;
+    private HashSet<E> conjuntoEstados;
     private boolean marked, dStateInitial, dStateFinal;
     private LinkedList<Dtransition> transitions;
 
@@ -21,7 +21,7 @@ public class Dstate {
      * @param dStateFinal indica si el Destado contiene un estado de aceptacion del NFA
      * @param dStateInitial indica si el Destado es el inicial
      */
-    public Dstate(HashSet<DirectedGraph.NodeClass> conjuntoEstados, boolean dStateInitial, boolean dStateFinal) {
+    public Dstate(HashSet<E> conjuntoEstados, boolean dStateInitial, boolean dStateFinal) {
         this.conjuntoEstados = conjuntoEstados;
         this.dStateFinal = dStateFinal;
         this.dStateInitial = dStateInitial;
@@ -29,11 +29,11 @@ public class Dstate {
         this.marked = false;
     }
 
-    public HashSet<DirectedGraph.NodeClass> getConjuntoEstados() {
+    public HashSet<E> getConjuntoEstados() {
         return conjuntoEstados;
     }
 
-    public void setConjuntoEstados(HashSet<DirectedGraph.NodeClass> conjuntoEstados) {
+    public void setConjuntoEstados(HashSet<E> conjuntoEstados) {
         this.conjuntoEstados = conjuntoEstados;
     }
 
@@ -80,8 +80,8 @@ public class Dstate {
      * @return verdadero si son iguales.
      */
     public boolean equals(Dstate o) {
-        HashSet<DirectedGraph.NodeClass> estados2 = o.getConjuntoEstados();
-        HashSet<DirectedGraph.NodeClass> estados1 = this.getConjuntoEstados();
+        HashSet estados2 = o.getConjuntoEstados();
+        HashSet<E> estados1 = this.getConjuntoEstados();
 
         return estados1.equals(estados2);
     }

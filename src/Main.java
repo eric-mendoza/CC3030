@@ -168,7 +168,7 @@ public class Main {
         System.out.println("Tiempo de creacion directa de dfa:\n\t- " + tiempo + " milisegundos");
 
         // Mostrar en pantalla el dfa directo
-        //AutomataRenderer.renderAutomata(dfaDirecto, "DFA por construccion directa");
+        AutomataRenderer.renderAutomata(dfaDirecto, "DFA por construccion directa");
 
         /**
          * Simplificar DFA
