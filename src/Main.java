@@ -16,7 +16,7 @@ public class Main {
          * Pedir a usuario que ingrese un regex
          */
         Scanner scanner = new Scanner(System.in);
-        System.out.println("Ingrese su expresion regular para construccion directa(No se aceptan ? ni +):");
+        System.out.println("Ingrese su expresion regular para construccion directa(! es epsilon):");
         String regex, inputRegex;
         inputRegex = scanner.next();
 
@@ -46,9 +46,6 @@ public class Main {
         System.out.println("Tiempo en crear NFA: ");
         System.out.println("\t- " + tiempo + " milisegundos");
 
-        // Mostrar en pantalla el automata generado
-        //AutomataRenderer.renderAutomata(nfa, "NFA");
-
         /**
          * Imprimir las caracteristicas del automata
          */
@@ -56,7 +53,7 @@ public class Main {
         try {
             pW = new PrintWriter(new File("NFA.txt"));
             pW.printf(nfa.automataDescription());
-            pW.printf("Tiempo en generar NFA:\n\t- " + tiempo + " milisegundos\n");
+            pW.printf("\nTiempo en generar NFA:\n\t- " + tiempo + " milisegundos\n");
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -67,17 +64,14 @@ public class Main {
 
 
         /**
-         * Transformar de NFA -> DFA
+         * Transformar de NFA -> DFA por subconjuntos
          */
         startTime = System.nanoTime();
         DirectedGraph dfa = nfaToDFA.convert(nfa);
         finishTime = System.nanoTime();
 
-        System.out.println("Tiempo en transformar NFA a DFA: ");
+        System.out.println("Tiempo en transformar NFA a DFA (Por subconjuntos): ");
         System.out.println("\t- " + tiempo + " milisegundos");
-
-        //Mostrar en pantalla el dfa
-        //AutomataRenderer.renderAutomata(dfa, "DFA");
 
         /**
          * Descripcion de dfa
@@ -86,7 +80,7 @@ public class Main {
         try {
             pW = new PrintWriter(new File("DFA.txt"));
             pW.printf(dfa.automataDescription());
-            pW.printf("Tiempo en transformar NFA a DFA:\n\t- " + tiempo + " milisegundos\n");
+            pW.printf("\nTiempo en transformar NFA a DFA (Por subconjuntos):\n\t- " + tiempo + " milisegundos\n");
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -95,67 +89,32 @@ public class Main {
             }
         }
 
-
         /**
-         * Simular NFA
+         * Simplificar DFA construido por subconjuntos
          */
-        /*
-        // Crear simulador
-        Simulator simulator = new Simulator(nfaToDFA);
-        String continuar = "1";
+        startTime = System.nanoTime();
+        DirectedGraph dfaSimplificado = hopcroftMinimizator.minimizateDFA(dfa);
+        finishTime = System.nanoTime();  // Tomar tiempo
 
-        while (continuar.equals("1")){
-            // Pedir ingreso
-            System.out.println("\nIngrese cadena a simular en NFA:");
-            String cadena;
-            cadena = scanner.next();
+        // Mostrar tiempo
+        tiempo = (finishTime - startTime) / 1000000.0;
+        System.out.println("Tiempo de simplicacion de DFA (Por subconjuntos):\n\t- " + tiempo + " milisegundos");
 
-            // Simular
-            startTime = System.nanoTime();  // Tomar tiempos
-            boolean resultado = simulator.simulateNFA(nfa, cadena);
-            finishTime = System.nanoTime();  // Tomar tiempo
 
-            if (resultado) System.out.println("\t- Resultado: ACEPTADA");
-            else System.out.println("\t- Resultado: RECHAZADA");
+        // Crear descripcion de documento
+        pW = null;
+        try {
+            pW = new PrintWriter(new File("DFA_Por_Subconjuntos.txt"));
+            pW.printf(dfaSimplificado.automataDescription());
+            pW.printf("\nTiempo de simplicacion de DFA (Por subconjuntos):\n\t- " + tiempo + " milisegundos\n");
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (pW != null) {
+                pW.close();
+            }
+        }
 
-            // Mostrar tiempo
-            tiempo = (finishTime - startTime) / 1000000.0;
-            System.out.println("\t- Tiempo de simulacion: " + tiempo + " milisegundos\n");
-
-            // Preguntar si desea simular otro
-            System.out.println("Si desea simular otra cadena, ingrese \'1\': ");
-            continuar = scanner.next();
-        } */
-
-        /**
-         * Simular DFA no simplificado
-         */
-        /*
-        // Crear simulador
-        continuar = "1";
-
-        while (continuar.equals("1")){
-            // Pedir ingreso
-            System.out.println("\nIngrese cadena a simular en DFA:");
-            String cadena;
-            cadena = scanner.next();
-
-            // Simular
-            startTime = System.nanoTime();
-            boolean resultado = simulator.simulateDFA(dfa, cadena);
-            finishTime = System.nanoTime();  // Tomar tiempo
-
-            if (resultado) System.out.println("\t- Resultado: ACEPTADA");
-            else System.out.println("\t- Resultado: RECHAZADA");
-
-            // Mostrar tiempo
-            tiempo = (finishTime - startTime) / 1000000.0;
-            System.out.println("\t- Tiempo de simulacion: " + tiempo + " milisegundos\n");
-
-            // Preguntar si desea simular otro
-            System.out.println("Si desea simular otra cadena, ingrese \'1\': ");
-            continuar = scanner.next();
-        }*/
 
         /**
          * Construccion directa de DFA
@@ -170,17 +129,15 @@ public class Main {
 
         // Mostrar tiempo
         tiempo = (finishTime - startTime) / 1000000.0;
-        System.out.println("Tiempo de creacion directa de dfa:\n\t- " + tiempo + " milisegundos");
+        System.out.println("Tiempo de creacion de DFA por construccion directa:\n\t- " + tiempo + " milisegundos");
 
-        // Mostrar en pantalla el dfa directo
-        //AutomataRenderer.renderAutomata(dfaDirecto, "DFA por construccion directa");
 
         // Crear descripcion de documento
         pW = null;
         try {
             pW = new PrintWriter(new File("DFA_Construccion_directa.txt"));
             pW.printf(dfaDirecto.automataDescription());
-            pW.printf("Tiempo en generar DFA directamente de regex:\n\t- " + tiempo + " milisegundos\n");
+            pW.printf("\nTiempo en generar DFA por construccion directa:\n\t- " + tiempo + " milisegundos\n");
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -190,25 +147,23 @@ public class Main {
         }
 
         /**
-         * Simplificar DFA
+         * Simplificar DFA por construccion directa
          */
+        HopcroftMinimizator hopcroftMinimizator1 = new HopcroftMinimizator();
         startTime = System.nanoTime();
-        DirectedGraph dfaSimplificado = hopcroftMinimizator.minimizateDFA(dfaDirecto);
+        DirectedGraph dfaDirectoSimplificado = hopcroftMinimizator1.minimizateDFA(dfaDirecto);
         finishTime = System.nanoTime();  // Tomar tiempo
 
         // Mostrar tiempo
         tiempo = (finishTime - startTime) / 1000000.0;
-        System.out.println("Tiempo de simplicacion de DFA:\n\t- " + tiempo + " milisegundos");
-
-        // Mostrar en pantalla el dfa minimizado
-        //AutomataRenderer.renderAutomata(dfaSimplificado, "DFA minimizado");
+        System.out.println("Tiempo de simplicacion de DFA (Por construccion directa):\n\t- " + tiempo + " milisegundos");
 
         // Crear descripcion de documento
         pW = null;
         try {
             pW = new PrintWriter(new File("DFA_Minimo.txt"));
-            pW.printf(dfaSimplificado.automataDescription());
-            pW.printf("\nTiempo de simplicacion de DFA:\n\t- " + tiempo + " milisegundos\n");
+            pW.printf(dfaDirectoSimplificado.automataDescription());
+            pW.printf("\nTiempo de simplicacion de DFA (Construccion Directa):\n\t- " + tiempo + " milisegundos\n");
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
@@ -216,6 +171,92 @@ public class Main {
                 pW.close();
             }
         }
+
+
+
+        /**
+         * Simular todos los automatas NFA, DFA, DFADirecto, DFAMinimizado, DFADirectoMinimizado
+         */
+
+        // Crear simulador
+        Simulator simulator = new Simulator(nfaToDFA);
+        String continuar = "1";
+
+        while (continuar.equals("1")){
+            // Pedir ingreso
+            System.out.println("\nIngrese cadena a simular en todos los automatas:");
+            String cadena;
+            cadena = scanner.next();
+
+            // Simular NFA
+            startTime = System.nanoTime();  // Tomar tiempos
+            boolean resultado = simulator.simulateNFA(nfa, cadena);
+            finishTime = System.nanoTime();  // Tomar tiempo
+
+            tiempo = (finishTime - startTime) / 1000000.0;
+            System.out.println("Tiempo de simulacion de NFA: " + tiempo + " milisegundos");
+
+            if (resultado) System.out.println("\t- Resultado: ACEPTADA\n");
+            else System.out.println("\t- Resultado: RECHAZADA\n");
+
+
+            // Simular DFA
+            startTime = System.nanoTime();  // Tomar tiempos
+            resultado = simulator.simulateDFA(dfa, cadena);
+            finishTime = System.nanoTime();  // Tomar tiempo
+
+            tiempo = (finishTime - startTime) / 1000000.0;
+            System.out.println("Tiempo de simulacion de DFA (Por subconjuntos): " + tiempo + " milisegundos");
+
+            if (resultado) System.out.println("\t- Resultado: ACEPTADA\n");
+            else System.out.println("\t- Resultado: RECHAZADA\n");
+
+            // Simular DFA minimizado
+            startTime = System.nanoTime();  // Tomar tiempos
+            resultado = simulator.simulateDFA(dfaSimplificado, cadena);
+            finishTime = System.nanoTime();  // Tomar tiempo
+
+            tiempo = (finishTime - startTime) / 1000000.0;
+            System.out.println("Tiempo de simulacion de DFA minimo (Por subconjuntos): " + tiempo + " milisegundos");
+
+            if (resultado) System.out.println("\t- Resultado: ACEPTADA\n");
+            else System.out.println("\t- Resultado: RECHAZADA\n");
+
+            // Simular DFA por construccion directa
+            startTime = System.nanoTime();  // Tomar tiempos
+            resultado = simulator.simulateDFA(dfaDirecto, cadena);
+            finishTime = System.nanoTime();  // Tomar tiempo
+
+            tiempo = (finishTime - startTime) / 1000000.0;
+            System.out.println("Tiempo de simulacion de DFA (Construccion directa): " + tiempo + " milisegundos");
+
+            if (resultado) System.out.println("\t- Resultado: ACEPTADA\n");
+            else System.out.println("\t- Resultado: RECHAZADA\n");
+
+            // Simular DFA minimo por construccion directa
+            startTime = System.nanoTime();  // Tomar tiempos
+            resultado = simulator.simulateDFA(dfaDirectoSimplificado, cadena);
+            finishTime = System.nanoTime();  // Tomar tiempo
+
+            tiempo = (finishTime - startTime) / 1000000.0;
+            System.out.println("Tiempo de simulacion de DFA minimo (Construccion directa): " + tiempo + " milisegundos");
+
+            if (resultado) System.out.println("\t- Resultado: ACEPTADA\n");
+            else System.out.println("\t- Resultado: RECHAZADA\n");
+
+            // Preguntar si desea simular otro
+            System.out.println("Si desea simular otra cadena, ingrese \'1\': ");
+            continuar = scanner.next();
+        }
+
+        /**
+         * Mostrar Automatas
+         */
+        AutomataRenderer.renderAutomata(nfa, "NFA");
+        AutomataRenderer.renderAutomata(dfa, "DFA por subconjuntos");
+        AutomataRenderer.renderAutomata(dfaSimplificado, "DFA (Por subconjuntos) minimizado");
+        AutomataRenderer.renderAutomata(dfaDirecto, "DFA por construccion directa");
+        AutomataRenderer.renderAutomata(dfaDirectoSimplificado, "DFA (Por construccion directa) minimizado");
 
     }
 }
