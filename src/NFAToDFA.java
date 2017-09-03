@@ -142,6 +142,11 @@ public class NFAToDFA {
         return null;
     }
 
+    /**
+     * Metodo que tiene como objetivo obtener todos los estados a los que se puede llegar a partir de
+     *  un estado y un input.
+     * @param nfa automata que se analizara para obtener resultado
+     */
     private void generateTransitionTable(DirectedGraph nfa){
         // Estados iniciales de nfa (solo es uno)
         HashSet<DirectedGraph.NodeClass> nodosInicialesNfa = nfa.getInicialNode();

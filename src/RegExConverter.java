@@ -40,7 +40,7 @@ public class RegExConverter {
      */
     private static String formatRegEx(String regex) {
         String res = new String();
-        List<Character> allOperators = Arrays.asList('|', '?', '+', '*', '^');
+        List<Character> allOperators = Arrays.asList('|', '?', '*', '^');  // SE LE ELIMINO KLEENE PLUS
         List<Character> binaryOperators = Arrays.asList('^', '|');
 
         for (int i = 0; i < regex.length(); i++) {

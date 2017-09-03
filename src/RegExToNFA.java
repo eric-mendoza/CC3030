@@ -361,24 +361,45 @@ public class RegExToNFA {
         DirectedGraph op1, op2, result;
         HashSet<String> alphabet = new HashSet<String>();
 
+        boolean ingresaronCaracterEscape;
         for (int i = 0; i < expr.length(); i++) {
             char c = expr.charAt(i);
-            if (isTwoOperator(c)) {
-                op2 = stack.pop();
-                op1 = stack.pop();
-                result = evalDoubleOp(c, op1, op2);
-                stack.push(result);
-            } else if (isOneOperator(c)) {
-                op1 = stack.pop();
-                result = evalSingleOp(c, op1);
-                stack.push(result);
+
+            // Verificar si ingresaron un caracter de escape
+            ingresaronCaracterEscape = c == '\\';
+
+            // Si no ingresaron un caracter de escape se hace toki normal
+            if (!ingresaronCaracterEscape){
+                if (isTwoOperator(c)) {
+                    op2 = stack.pop();
+                    op1 = stack.pop();
+                    result = evalDoubleOp(c, op1, op2);
+                    stack.push(result);
+                } else if (isOneOperator(c)) {
+                    op1 = stack.pop();
+                    result = evalSingleOp(c, op1);
+                    stack.push(result);
+                } else {
+                    stack.push(createSimpleGraph(String.valueOf(c)));
+                    String letra = String.valueOf(c);
+                    if (!letra.equals("!")) {
+                        alphabet.add(letra);  // Agregar letra a alfabeto
+                    }
+                }
             } else {
+                // Moverse al siguiente caracter
+                i++;
+                c = expr.charAt(i);
+                i++;
+
                 stack.push(createSimpleGraph(String.valueOf(c)));
                 String letra = String.valueOf(c);
                 if (!letra.equals("!")) {
                     alphabet.add(letra);  // Agregar letra a alfabeto
                 }
             }
+
+
         }
 
         result = stack.pop();

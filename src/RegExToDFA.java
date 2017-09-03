@@ -346,27 +346,52 @@ public class RegExToDFA {
         BinaryTree op1, op2, result;
         HashSet<String> alphabet = new HashSet<String>();
 
+        // Se modifico esta clase para poder soportar metacaracteres
+        boolean ingresaronCaracterEscape =  false;
         for (int i = 0; i < regex.length(); i++) {
             char c = regex.charAt(i);
-            if (RegExToNFA.isTwoOperator(c)) {
-                op2 = stack.pop();
-                op1 = stack.pop();
-                stack.push(new BinaryTree(String.valueOf(c), op1, op2));
-            } else if (RegExToNFA.isOneOperator(c)) {
-                op1 = stack.pop();
-                stack.push(new BinaryTree(String.valueOf(c), op1, null));
-            } else {
-                String letra = String.valueOf(c);
-                result = new BinaryTree(letra);  // Crear nodo hoja
-                if (!letra.equals("!")) {
-                    int posicion = getPositionCounter();
-                    result.setPosition(posicion);  // Setear posicion en arbol
-                    leafNodes.put(posicion, result);  // Agregar a mapa de nodos
+
+            // Verificar si ingresaron un caracter de escape
+            ingresaronCaracterEscape = c == '\\';
+
+            // Si no ingresaron un caracter de escape se hace toki normal
+            if (!ingresaronCaracterEscape){
+                if (RegExToNFA.isTwoOperator(c)) {
+                    op2 = stack.pop();
+                    op1 = stack.pop();
+                    stack.push(new BinaryTree(String.valueOf(c), op1, op2));
+                } else if (RegExToNFA.isOneOperator(c)) {
+                    op1 = stack.pop();
+                    stack.push(new BinaryTree(String.valueOf(c), op1, null));
+                } else {
+                    String letra = String.valueOf(c);
+                    result = new BinaryTree(letra);  // Crear nodo hoja
+                    if (!letra.equals("!")) {
+                        int posicion = getPositionCounter();
+                        result.setPosition(posicion);  // Setear posicion en arbol
+                        leafNodes.put(posicion, result);  // Agregar a mapa de nodos
+                    }
+
+                    if (!letra.equals("!") && !letra.equals("#")){
+                        alphabet.add(letra);  // Agregar letra a alfabeto
+                    }
+
+                    stack.push(result);
                 }
 
-                if (!letra.equals("!") && !letra.equals("#")){
-                    alphabet.add(letra);  // Agregar letra a alfabeto
-                }
+            // Pero si ingresaron caracter especial, saltarse el paso para reconocerlo como de alfabeto
+            } else {
+                // Moverse al siguiente caracter
+                i++;
+                c = regex.charAt(i);
+                i++;
+
+                String letra = String.valueOf(c);
+                result = new BinaryTree(letra);  // Crear nodo hoja
+                int posicion = getPositionCounter();
+                result.setPosition(posicion);  // Setear posicion en arbol
+                leafNodes.put(posicion, result);  // Agregar a mapa de nodos
+                alphabet.add(letra);  // Agregar letra a alfabeto
 
                 stack.push(result);
             }

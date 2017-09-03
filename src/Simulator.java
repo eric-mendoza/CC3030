@@ -7,20 +7,18 @@ import java.util.HashSet;
  * @since 5/08/207
  */
 public class Simulator {
-    /**
-     * Atributos de simulador
-     */
-    private NFAToDFA funciones;
 
     /**
      * Constructor
-     * @param nfaToDFA para obtener e-closures
      */
-    public Simulator(NFAToDFA nfaToDFA){
-        funciones = nfaToDFA;
+    public Simulator(){
     }
 
-    public boolean simulateNFA(DirectedGraph nfa, String expr){
+    public boolean simulateNFA(DirectedGraph nfa, String expr, NFAToDFA nfaToDFA){
+        /*
+      Atributos de simulador
+     */
+
         // Obtener estado inicial de nfa
         DirectedGraph.NodeClass nodoInicial = nfa.getOneInicialNode();
 
@@ -28,12 +26,12 @@ public class Simulator {
         DirectedGraph.NodeClass nodoFinal = nfa.getOneFinalNode();
 
         // Obtener conjunto de estados iniciales
-        HashSet<DirectedGraph.NodeClass> currentStates = funciones.getEClosure(nodoInicial);
+        HashSet<DirectedGraph.NodeClass> currentStates = nfaToDFA.getEClosure(nodoInicial);
         for (int i = 0; i < expr.length(); i++) {
             char c = expr.charAt(i);
 
             // Moverse hacia siguiente conjunto de estados
-            currentStates = funciones.moveT(currentStates, String.valueOf(c));
+            currentStates = nfaToDFA.moveT(currentStates, String.valueOf(c));
         }
 
         return currentStates.contains(nodoFinal);
@@ -59,12 +57,24 @@ public class Simulator {
 
             if (alphabet.contains(letra)){
                 // Moverse hacia siguiente conjunto de estados
-                currentState = funciones.move(currentState, letra);
+                currentState = move(currentState, letra);
             }
 
             else return false;
         }
 
         return currentState.isFinal();
+    }
+
+    private DirectedGraph.NodeClass move(DirectedGraph.NodeClass nodo, String symbol){
+        // Analizar cada una de las transiciones del estado
+        for (DirectedGraph.edgeContents transicion: nodo.edges) {
+            // Si una transicion es igual a el simbolo, retornar estado
+            if (transicion.getTransition().equals(symbol)){
+                return transicion.getFinishingNode();
+            }
+        }
+
+        return null;
     }
 }
