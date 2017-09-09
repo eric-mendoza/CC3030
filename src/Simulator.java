@@ -14,10 +14,15 @@ public class Simulator {
     public Simulator(){
     }
 
-    public boolean simulateNFA(DirectedGraph nfa, String expr, NFAToDFA nfaToDFA){
+    public boolean simulateNFA(DirectedGraph nfa, String expr){
         /*
-      Atributos de simulador
-     */
+            Atributos de simulador
+        */
+        // Funciones
+        NFAToDFA nfaToDFA = new NFAToDFA();
+
+        // Eclosure
+        nfaToDFA.generateSimpleEClosure(nfa);
 
         // Obtener estado inicial de nfa
         DirectedGraph.NodeClass nodoInicial = nfa.getOneInicialNode();

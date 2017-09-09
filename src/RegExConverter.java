@@ -40,18 +40,30 @@ public class RegExConverter {
     private static String formatRegEx(String regex) {
         String res = new String();
         List<Character> allOperators = Arrays.asList('|', '?', '*', '+');  // SE LE ELIMINO KLEENE PLUS
-        List<Character> binaryOperators = Arrays.asList('^', '|');
+        List<Character> binaryOperators = Arrays.asList('|');
+        boolean usedEscape = false;
 
         for (int i = 0; i < regex.length(); i++) {
             Character c1 = regex.charAt(i);
 
+            // Verificar que aun no este en la ultima posicion
             if (i + 1 < regex.length()) {
+                // Obtener el siguiente caracter
                 Character c2 = regex.charAt(i + 1);
 
+                // Agregar el primer caracter a la respuesta
                 res += c1;
 
-                if (!c1.equals('(') && !c2.equals(')') && !allOperators.contains(c2) && !binaryOperators.contains(c1)) {
-                    res += '.';
+                // Agregar caracter de escape
+                if (!c1.equals('\\')){
+                    // Si el primer caracter no es un parentesis y el segundo no es un operador
+                    if ((!c1.equals('(') && !c2.equals(')') && !allOperators.contains(c2) && !binaryOperators.contains(c1)) || (usedEscape && !c2.equals(')') && !allOperators.contains(c2))) {
+                        res += '.';
+                    }
+                    usedEscape = false;
+                } else {
+                    // Indicar que se utilizo el caracter de escape
+                    usedEscape = true;
                 }
             }
         }
@@ -73,8 +85,11 @@ public class RegExConverter {
 
         Stack<Character> stack = new Stack<Character>();
         String formattedRegEx = formatRegEx(regex);
+        char[] formatedRegexArray = formattedRegEx.toCharArray();
 
-        for (Character c : formattedRegEx.toCharArray()) {
+        for (int i = 0; i < formatedRegexArray.length; i++) {
+            char c = formatedRegexArray[i];
+
             switch (c) {
                 case '(':
                     stack.push(c);
@@ -85,6 +100,12 @@ public class RegExConverter {
                         postfix += stack.pop();
                     }
                     stack.pop();
+                    break;
+
+                case '\\':
+                    postfix += "\\";
+                    i++;
+                    postfix += formatedRegexArray[i];
                     break;
 
                 default:
@@ -99,6 +120,7 @@ public class RegExConverter {
                         } else {
                             break;
                         }
+
                     }
                     stack.push(c);
                     break;

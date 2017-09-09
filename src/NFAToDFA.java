@@ -31,7 +31,7 @@ public class NFAToDFA {
      * Este metodo tiene como objetivo generar el e-closure de cada estado del automata y almacenarlo en una variable
      * @param nfa automata a procesar
      */
-    private void generateSimpleEClosure(DirectedGraph nfa) {
+    public void generateSimpleEClosure(DirectedGraph nfa) {
         // Obtener nodos de automata a procesar
         LinkedList<DirectedGraph.NodeClass> nodos = nfa.getAllNodes();
 

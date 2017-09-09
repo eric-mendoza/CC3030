@@ -44,14 +44,16 @@ public class TestAutomatonCreators {
         double tiempo = (finishTime - startTime) / 1000000.0;  // Diferencia
         System.out.println("Tiempo en crear NFA: ");
         System.out.println("\t- " + tiempo + " milisegundos");
+        String descripcion = nfa.automataDescription();
 
         /**
          * Imprimir las caracteristicas del automata
          */
+        /*
         PrintWriter pW = null;
         try {
             pW = new PrintWriter(new File("NFA.txt"));
-            pW.printf(nfa.automataDescription());
+            pW.printf(descripcion);
             pW.printf("\nTiempo en generar NFA:\n\t- " + tiempo + " milisegundos\n");
         } catch (IOException e) {
             e.printStackTrace();
@@ -60,13 +62,14 @@ public class TestAutomatonCreators {
                 pW.close();
             }
         }
+        */
 
 
         /**
          * Transformar de NFA -> DFA por subconjuntos
          */
         startTime = System.nanoTime();
-        DirectedGraph dfa = nfaToDFA.convert(nfa);
+        //DirectedGraph dfa = nfaToDFA.convert(nfa);
         finishTime = System.nanoTime();
 
         System.out.println("Tiempo en transformar NFA a DFA (Por subconjuntos): ");
@@ -75,6 +78,7 @@ public class TestAutomatonCreators {
         /**
          * Descripcion de dfa
          */
+        /*
         tiempo = (finishTime - startTime) / 1000000.0;  // Diferencia
         try {
             pW = new PrintWriter(new File("DFA.txt"));
@@ -87,12 +91,13 @@ public class TestAutomatonCreators {
                 pW.close();
             }
         }
+        */
 
         /**
          * Simplificar DFA construido por subconjuntos
          */
         startTime = System.nanoTime();
-        DirectedGraph dfaSimplificado = hopcroftMinimizator.minimizateDFA(dfa);
+        //DirectedGraph dfaSimplificado = hopcroftMinimizator.minimizateDFA(dfa);
         finishTime = System.nanoTime();  // Tomar tiempo
 
         // Mostrar tiempo
@@ -101,6 +106,7 @@ public class TestAutomatonCreators {
 
 
         // Crear descripcion de documento
+        /*
         pW = null;
         try {
             pW = new PrintWriter(new File("DFA_Por_Subconjuntos.txt"));
@@ -113,6 +119,7 @@ public class TestAutomatonCreators {
                 pW.close();
             }
         }
+        */
 
 
         /**
@@ -132,6 +139,7 @@ public class TestAutomatonCreators {
 
 
         // Crear descripcion de documento
+        /*
         pW = null;
         try {
             pW = new PrintWriter(new File("DFA_Construccion_directa.txt"));
@@ -144,6 +152,7 @@ public class TestAutomatonCreators {
                 pW.close();
             }
         }
+        */
 
         /**
          * Simplificar DFA por construccion directa
@@ -158,6 +167,7 @@ public class TestAutomatonCreators {
         System.out.println("Tiempo de simplicacion de DFA (Por construccion directa):\n\t- " + tiempo + " milisegundos");
 
         // Crear descripcion de documento
+        /*
         pW = null;
         try {
             pW = new PrintWriter(new File("DFA_Minimo.txt"));
@@ -170,6 +180,7 @@ public class TestAutomatonCreators {
                 pW.close();
             }
         }
+        */
 
 
 
@@ -189,7 +200,7 @@ public class TestAutomatonCreators {
 
             // Simular NFA
             startTime = System.nanoTime();  // Tomar tiempos
-            boolean resultado = simulator.simulateNFA(nfa, cadena, nfaToDFA);
+            boolean resultado = simulator.simulateNFA(nfa, cadena);
             finishTime = System.nanoTime();  // Tomar tiempo
 
             tiempo = (finishTime - startTime) / 1000000.0;
@@ -198,7 +209,7 @@ public class TestAutomatonCreators {
             if (resultado) System.out.println("\t- Resultado: ACEPTADA\n");
             else System.out.println("\t- Resultado: RECHAZADA\n");
 
-
+            /*
             // Simular DFA
             startTime = System.nanoTime();  // Tomar tiempos
             resultado = simulator.simulateDFA(dfa, cadena);
@@ -242,6 +253,7 @@ public class TestAutomatonCreators {
 
             if (resultado) System.out.println("\t- Resultado: ACEPTADA\n");
             else System.out.println("\t- Resultado: RECHAZADA\n");
+            */
 
             // Preguntar si desea simular otro
             System.out.println("Si desea simular otra cadena, ingrese \'1\': ");
@@ -252,9 +264,9 @@ public class TestAutomatonCreators {
          * Mostrar Automatas
          */
         AutomataRenderer.renderAutomata(nfa, "NFA");
-        AutomataRenderer.renderAutomata(dfa, "DFA por subconjuntos");
-        AutomataRenderer.renderAutomata(dfaSimplificado, "DFA (Por subconjuntos) minimizado");
-        AutomataRenderer.renderAutomata(dfaDirecto, "DFA por construccion directa");
-        AutomataRenderer.renderAutomata(dfaDirectoSimplificado, "DFA (Por construccion directa) minimizado");
+        //AutomataRenderer.renderAutomata(dfa, "DFA por subconjuntos");
+        //AutomataRenderer.renderAutomata(dfaSimplificado, "DFA (Por subconjuntos) minimizado");
+        //AutomataRenderer.renderAutomata(dfaDirecto, "DFA por construccion directa");
+        //AutomataRenderer.renderAutomata(dfaDirectoSimplificado, "DFA (Por construccion directa) minimizado");
     }
 }

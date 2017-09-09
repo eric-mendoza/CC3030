@@ -11,9 +11,13 @@ import java.util.Scanner;
  */
 public class Main {
     public static void main(String[] args) throws IOException {
-        //CocolRReader cocolRReader = new CocolRReader("CocolR.txt");
-        //cocolRReader.verifySintax();
-        TestAutomatonCreators.runTest();
+        CocolRReader cocolRReader = new CocolRReader();
+        if (cocolRReader.analizeCocolRSyntax("CocolR.txt")){
+            System.out.println("Se acepta el documento");
+        } else {
+            System.out.println("No se acepta el documento");
+        }
+        //TestAutomatonCreators.runTest();
     }
 
 }

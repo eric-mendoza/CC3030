@@ -390,13 +390,10 @@ public class RegExToNFA {
                 // Moverse al siguiente caracter
                 i++;
                 c = expr.charAt(i);
-                i++;
 
                 stack.push(createSimpleGraph(String.valueOf(c)));
                 String letra = String.valueOf(c);
-                if (!letra.equals("!")) {
-                    alphabet.add(letra);  // Agregar letra a alfabeto
-                }
+                alphabet.add(letra);  // Agregar letra a alfabeto
             }
 
 

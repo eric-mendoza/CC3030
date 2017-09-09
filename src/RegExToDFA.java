@@ -384,10 +384,10 @@ public class RegExToDFA {
                 // Moverse al siguiente caracter
                 i++;
                 c = regex.charAt(i);
-                i++;
 
                 String letra = String.valueOf(c);
                 result = new BinaryTree(letra);  // Crear nodo hoja
+
                 int posicion = getPositionCounter();
                 result.setPosition(posicion);  // Setear posicion en arbol
                 leafNodes.put(posicion, result);  // Agregar a mapa de nodos
