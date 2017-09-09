@@ -19,7 +19,6 @@ public class RegExConverter {
         map.put('?', 4);
         map.put('*', 4);
         map.put('+', 4);
-        map.put('^', 5);
         precedenceMap = Collections.unmodifiableMap(map);
     };
 
@@ -40,7 +39,7 @@ public class RegExConverter {
      */
     private static String formatRegEx(String regex) {
         String res = new String();
-        List<Character> allOperators = Arrays.asList('|', '?', '*', '^');  // SE LE ELIMINO KLEENE PLUS
+        List<Character> allOperators = Arrays.asList('|', '?', '*', '+');  // SE LE ELIMINO KLEENE PLUS
         List<Character> binaryOperators = Arrays.asList('^', '|');
 
         for (int i = 0; i < regex.length(); i++) {

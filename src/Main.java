@@ -11,8 +11,8 @@ import java.util.Scanner;
  */
 public class Main {
     public static void main(String[] args) throws IOException {
-        CocolRReader cocolRReader = new CocolRReader("CocolR.txt");
-        cocolRReader.verifySintax();
+        //CocolRReader cocolRReader = new CocolRReader("CocolR.txt");
+        //cocolRReader.verifySintax();
         TestAutomatonCreators.runTest();
     }
 

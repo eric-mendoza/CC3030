@@ -28,7 +28,7 @@ public class CocolRReader {
 
     // Regex de estructura
     private String compilerDeclaration = " *COMPILER  *(" + identRegex + ") *";
-    private String endDeclaration = " *END  *(" + identRegex + ") *\\.";
+    private String endDeclaration = " *END  *(" + identRegex + ") *\\. *";
     private String charactersDeclaration = " *CHARACTERS *";
     private String keywordsDeclaration = " *KEYWORDS *";
 
@@ -37,6 +37,9 @@ public class CocolRReader {
     private String setRegex = "(" + basicSetRegex + ")( *(\\+|-) *(" +  basicSetRegex + "))*";
     private String setDeclRegex = "(" + identRegex + ") *= *" + "(" + setRegex + ") *\\.";
 
+    // KEYWORDS regex
+    private String keywordDeclRegex = "(" + identRegex + ") *= *(" + stringRegex +") *\\.";
+
     private String test = "(\\+|-)";
 
     /**
@@ -44,23 +47,101 @@ public class CocolRReader {
      */
     private DirectedGraph compilerDeclarationAutomata = createAutomaton(compilerDeclaration);
     private DirectedGraph charactersDeclarationAutomata = createAutomaton(charactersDeclaration);
+    private DirectedGraph keywordsDeclarationAutomata = createAutomaton(keywordsDeclaration);
+
+    private DirectedGraph keywordDeclAutomata = createAutomaton(keywordDeclRegex);
     private DirectedGraph setsDeclAutomata = createAutomaton(setDeclRegex);
     private DirectedGraph endDeclarationAutomata = createAutomaton(endDeclaration);
+
+    // Simulador para automatas
+    Simulator simulator = new Simulator();
 
 
 
     public CocolRReader(String filename){
         documento = readFile(filename);
-        if (documento != null) {
-            for (String linea : documento) {
+        boolean inicio = false;
+        boolean characters = false;
+        int inicioCharacters = 0;
+        boolean charactersCorrectly = true;
+        int inicioKeywords = 0;
+        boolean keywords = false;
+        boolean keywordsCorrectly = true;
+        ArrayList<String[]> ordenAnalisis = new ArrayList<String[]>();
 
+        boolean end = false;
+
+        int lineaInicio = 0;
+        int lineaFinal = 0;
+        if (documento != null) {
+            // Encontrar inicio
+            for (int i = 0; i < documento.size(); i++) {
+                inicio = simulator.simulateDFA(compilerDeclarationAutomata, documento.get(i));
+                if (inicio){
+                    lineaInicio = i;
+                    break;
+                }
             }
+
+            // Encontrar secciones opcionales
+            for (int i = lineaInicio; i < documento.size(); i++) {
+                characters = characters | simulator.simulateDFA(charactersDeclarationAutomata, documento.get(i));
+                if (characters) inicioCharacters = i;
+
+                keywords = keywords | simulator.simulateDFA(keywordsDeclarationAutomata, documento.get(i));
+                if (keywords) inicioKeywords = i;
+
+                end = simulator.simulateDFA(endDeclarationAutomata, documento.get(i));
+                if (end) {
+                    lineaFinal = i;
+                    break;
+                }
+            }
+
+            // Verificar que se hayan ingresado correctamente los keywords y characters
+            if (characters){
+                String linea;
+                for (int i = inicioCharacters; i < inicioKeywords; i++) {
+                    linea = documento.get(i);
+                    if (!linea.equals("")){
+                        charactersCorrectly = charactersCorrectly && simulator.simulateDFA(setsDeclAutomata, linea);
+                    }
+                }
+            }
+
+
+            // Verificar que se hayan ingresado correctamente los keywords y characters
+            if (keywords){
+                String linea;
+                for (int i = inicioKeywords; i < lineaFinal; i++) {
+                    linea = documento.get(i);
+                    if (!linea.equals("")){
+                        keywordsCorrectly = keywordsCorrectly && simulator.simulateDFA(keywordDeclAutomata, linea);
+                    }
+                }
+            }
+
+
         }
+
+        if (!inicio) System.out.println("Error: Declaracion de inicio incorrecta");
+        if (!end) System.out.println("Error: No se coloco correctamente el final del documento");
+        if (keywords && !keywordsCorrectly) System.out.println("Error: Se ingresaron incorrectamente los keywords");
+        if (characters && !charactersCorrectly) System.out.println("Error: Se ingresaron incorrectamente los characters");
     }
 
     public boolean verifySintax(){
-        System.out.println(setDeclRegex);
-        createAutomaton(setDeclRegex);
+        //System.out.println(setDeclRegex);
+        //createAutomaton(setDeclRegex);
+
+        // Probar keywords
+        boolean resultado = simulator.simulateDFA(keywordDeclAutomata, "while  \"while\".");
+        System.out.println("Estado de keyword: " + resultado);
+
+        // Probar characters
+        resultado = simulator.simulateDFA(setsDeclAutomata, "digit = \'a\'.");
+        System.out.println("Estado de characters: " + resultado);
+
         return false;
     }
 
@@ -72,7 +153,6 @@ public class CocolRReader {
         RegExToDFA regExToDFA = new RegExToDFA();
         regex = regExToDFA.augmentateRegex(regex);  // Agregar eof al regex
         regex = RegExConverter.infixToPostfix(regex);  // Convertir a postfix
-        System.out.println(regex);
         DirectedGraph dfaDirecto = regExToDFA.createDFA(regex);
 
 
@@ -85,9 +165,9 @@ public class CocolRReader {
         /**
          * Simular dfa
          */
-        Simulator simulator = new Simulator();
-        boolean resultado = simulator.simulateDFA(dfaDirectoSimplificado, "Hola = jamon.");
-        System.out.println("Estado de aceptacion: " + resultado);
+        //simulator = new Simulator();
+        //boolean resultado = simulator.simulateDFA(dfaDirectoSimplificado, "digit = ANY.");
+        //System.out.println("Estado de aceptacion: " + resultado);
 
         /**
          * Graficar para verificar

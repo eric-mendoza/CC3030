@@ -32,7 +32,7 @@ public class TestAutomatonCreators {
          * Normalizar expresion a evaluar y conviertir a postfix
          */
         regex = RegExConverter.infixToPostfix(inputRegex);
-        //System.out.println(regex);
+        System.out.println(regex);
 
         /**
          * Crear NFA
