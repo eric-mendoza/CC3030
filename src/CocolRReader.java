@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -12,14 +13,14 @@ public class CocolRReader {
     // Regex mas basicos
     private String letterRegex = "a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z";
     private String digitRegex = "0|1|2|3|4|5|6|7|8|9";
-    private String anyButQuoteRegex = digitRegex + "|\\.|#|$|%|&|/|=|¡|\'|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|\\+|\\?|\\!|\\||" + letterRegex;
-    private String anyButApostropheRegex = digitRegex + "|\\.|#|$|%|&|/|=|¡|\"|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|\\+|\\?|\\!|\\||" + letterRegex;
+    private String anyButQuoteRegex = digitRegex + "|\\.|#|$|%|&|/|=|¡|\'|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|\\+|\\?|\\!|\\|| |" + letterRegex;   // El esparcio podria fallar
+    private String anyButApostropheRegex = digitRegex + "|\\.|#|$|%|&|/|=|¡|\"|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|\\+|\\?|\\!|\\|| |" + letterRegex;
 
     // Vocabulary
     private String identRegex = "(" + letterRegex + ")((" + letterRegex + ")|(" + digitRegex + "))*";
     private String numberRegex = "(" + digitRegex + ")(" + digitRegex + ")*";
     private String stringRegex = "\"(" + anyButQuoteRegex + ")*\"";
-    private String charRegex = "'(" + anyButApostropheRegex + ")'";
+    private String charRegexBasic = "'(" + anyButApostropheRegex + ")'";
 
     // Regex de estructura
     private String compilerDeclaration = " *COMPILER  *(" + identRegex + ") *";
@@ -28,7 +29,8 @@ public class CocolRReader {
     private String keywordsDeclaration = " *KEYWORDS *";
 
     // CHARACTERS regexs
-    private String basicSetRegex = "(" + stringRegex + ")|(" + identRegex + ")|(" + charRegex + ")|(" + charRegex + " * \\.\\. *" + charRegex + ")|(ANY)";
+    private String charRegex = "((" + charRegexBasic + ")|( *CHR *\\( *" + numberRegex  + " *\\) *))";
+    private String basicSetRegex = "(" + stringRegex + ")|(" + identRegex + ")|(" + charRegex + "( *\\.\\. *" + charRegex + " *)?)|(ANY)";
     private String setRegex = "(" + basicSetRegex + ")( *(\\+|-) *(" +  basicSetRegex + "))*";
     private String setDeclRegex = " *(" + identRegex + ") *= *" + "(" + setRegex + ") *\\. *";
 
@@ -53,14 +55,32 @@ public class CocolRReader {
     // Simulador para automatas
     private Simulator simulator = new Simulator();
 
+    /**
+     * Guardar los patrones de cada seccion en hashmaps
+     */
+    HashMap<String, String> caracteres = new HashMap<String, String>();  // Se va a guardar <iden, Conjunto>
+    HashMap<String, String> palabrasReservadas = new HashMap<String, String>();  // Se va a guardar <iden, keyword>
+    ArrayList<String> palabrasIgnoradas = new ArrayList<String>();
 
 
+    public void generateLexer(){
 
+    }
+
+
+    /**
+     * Metodo que tiene como objetivo verificar que esten correctamente declaradas cada una de las secciones de cocol/r
+     * @param filename
+     * @return
+     */
     public boolean analizeCocolRSyntax(String filename){
         /*
       Crear variables para la creacion de automatas de verificacion de sintax
      */
         List<String> documento = readFile(filename);
+        if (documento == null){
+            return false;
+        }
 
         boolean inicio = false;
         boolean characters = false;
@@ -74,7 +94,8 @@ public class CocolRReader {
         int inicioWhiteSpace = 0;
         boolean existenErrores = false;
         ArrayList<String> errores = new ArrayList<String>();
-
+        String identInicio = "", identFinal = "";
+        boolean identIguales = false;
         boolean end = false;
 
         int lineaInicio = 0;
@@ -82,16 +103,17 @@ public class CocolRReader {
         if (documento != null) {
             // Encontrar inicio
             for (int i = 0; i < documento.size(); i++) {
-                inicio = simulator.simulateNFA(compilerDeclarationAutomata, documento.get(i));
+                inicio = simulator.simulateNFA(compilerDeclarationAutomata, documento.get(i));  // Devuelve True cuando encuentra COMPILER
                 if (inicio){
-                    lineaInicio = i;
+                    lineaInicio = i;  // Guarda posicion inicio
+                    identInicio = documento.get(i).split(" ")[1] + ".";  // Guarda identificador de inicio. Se le agrego un punto para coincidir con el del final
                     break;
                 }
             }
 
             // Encontrar posicion CHARACTERS declaration
             for (int i = lineaInicio; i < documento.size(); i++) {
-                characters = simulator.simulateNFA(charactersDeclarationAutomata, documento.get(i));
+                characters = simulator.simulateNFA(charactersDeclarationAutomata, documento.get(i));  // Devuelve True cuando encuentra CHARACTERS
                 if (characters) {
                     inicioCharacters = i;
                     break;
@@ -101,14 +123,14 @@ public class CocolRReader {
             // Encontrar Keywords Declaration
             int inicioBusquedaKeywords;
 
-            if (characters){  // Ahorrarse un par de lineas de busqueda
+            if (characters){  // Ahorrarse un par de lineas de busqueda viendo si existe CHARACTERS
                 inicioBusquedaKeywords = inicioCharacters;
             } else {
                 inicioBusquedaKeywords = lineaInicio;
             }
 
             for (int i = inicioBusquedaKeywords; i < documento.size(); i++) {
-                keywords = simulator.simulateNFA(keywordsDeclarationAutomata, documento.get(i));
+                keywords = simulator.simulateNFA(keywordsDeclarationAutomata, documento.get(i));  // Devuelve True si encuentra KEYWORDS
                 if (keywords) {
                     inicioKeywords = i;
                     break;
@@ -127,9 +149,9 @@ public class CocolRReader {
             }
 
             for (int i = inicioBusquedaWhiteSpace; i < documento.size(); i++) {
-                whitespace = simulator.simulateNFA(whitespaceDeclarationAutomata, documento.get(i));
+                whitespace = simulator.simulateNFA(whitespaceDeclarationAutomata, documento.get(i));  // Si encuentra IGNORE indica donde esta
                 if (whitespace){
-                    inicioBusquedaWhiteSpace = i;
+                    inicioWhiteSpace = i;
                     break;
                 }
             }
@@ -147,28 +169,28 @@ public class CocolRReader {
             }
 
             for (int i = inicioBusquedaFinal; i < documento.size(); i++) {
-                end = simulator.simulateNFA(endDeclarationAutomata, documento.get(i));
+                end = simulator.simulateNFA(endDeclarationAutomata, documento.get(i));  // Busca la palabra END
                 if (end) {
                     lineaFinal = i;
+                    identFinal = documento.get(i).split(" ")[1];  // Guarda identificador de final
                     break;
                 }
             }
 
 
             // Verificar que se hayan ingresado correctamente los characters
-            if (characters){
+            if (characters){  // Si se encontro esta seccion...
+                System.out.println("Cargando characters...");
                 String linea;
 
-                // establecer final de loop
+                // Establecer final de loop
                 int finBusquedaCharacters;
                 if (keywords){
                     finBusquedaCharacters = inicioKeywords;
                 }
-
                 else if (whitespace){
                     finBusquedaCharacters = inicioWhiteSpace;
                 }
-
                 else {
                     finBusquedaCharacters = lineaFinal;
                 }
@@ -177,10 +199,14 @@ public class CocolRReader {
                 for (int i = inicioCharacters + 1; i < finBusquedaCharacters; i++) {
                     linea = documento.get(i);
                     if (!linea.equals("")){
-                        charactersCorrectly = simulator.simulateNFA(setsDeclAutomata, linea);
+                        charactersCorrectly = simulator.simulateNFA(setsDeclAutomata, linea);  // Verificar que la linea este bien escrita
 
-                        // Si se encuentra una linea incorrecta
-                        if (!charactersCorrectly) {
+                        // Si se encuentra una linea correcta
+                        if (charactersCorrectly) {
+                            String[] lineSections = linea.split("=");
+                            caracteres.put(lineSections[0], lineSections[1]);  // Guardar ident y conjunto
+
+                        } else {
                             errores.add("Error al declarar un character. Linea: " + String.valueOf(i + 1));
                             existenErrores = true;
                             break;
@@ -191,26 +217,29 @@ public class CocolRReader {
 
 
             // Verificar que se hayan ingresado correctamente los keywords
-            if (keywords){
+            if (keywords){  // Si existe esta seccion
                 String linea;
+                System.out.println("Cargando keywords...");
 
                 // establecer final de loop
                 int finBusquedaKeywords;
                 if (whitespace){
                     finBusquedaKeywords = inicioWhiteSpace;
                 }
-
                 else {
                     finBusquedaKeywords = lineaFinal;
                 }
-
                 for (int i = inicioKeywords + 1; i < finBusquedaKeywords; i++) {
                     linea = documento.get(i);
                     if (!linea.equals("")){
                         keywordsCorrectly = simulator.simulateNFA(keywordDeclAutomata, linea);
 
                         // Si se encuentra una linea incorrecta
-                        if (!keywordsCorrectly) {
+                        if (keywordsCorrectly) {
+                            String[] seccionesLinea = linea.split("=");
+                            palabrasReservadas.put(seccionesLinea[0], seccionesLinea[1]);
+
+                        } else {
                             errores.add("Error al declarar un keyword. Linea: " + String.valueOf(i + 1));
                             existenErrores = true;
                             break;
@@ -223,14 +252,19 @@ public class CocolRReader {
             // Verificar que se hayan ingresado correctamente los whitespace
             if (whitespace){
                 String linea;
+                System.out.println("Cargando whitespaces...");
 
-                for (int i = inicioBusquedaWhiteSpace; i < lineaFinal; i++) {
+
+                for (int i = inicioWhiteSpace; i < lineaFinal; i++) {
                     linea = documento.get(i);
                     if (!linea.equals("")){
                         whitespaceCorrectly = simulator.simulateNFA(whitespaceDeclarationAutomata, linea);
 
                         // Si se encuentra una linea incorrecta
-                        if (!whitespaceCorrectly) {
+                        if (whitespaceCorrectly) {
+                            String[] seccionesLinea = linea.split("IGNORE");
+                            palabrasIgnoradas.add(seccionesLinea[1]);
+                        } else {
                             errores.add("Error al declarar un whitespace. Linea: " + String.valueOf(i + 1));
                             existenErrores = true;
                             break;
@@ -240,6 +274,11 @@ public class CocolRReader {
             }
         }
 
+        // Revisar errores
+        if (inicio && end){
+            identIguales = identFinal.equals(identInicio);
+        }
+        if (!identIguales) System.out.println("Error: Los identificadores de inicio y final no coinciden.");
         if (!inicio) System.out.println("Error: Declaracion de inicio incorrecta");
         if (!end) System.out.println("Error: No se coloco correctamente el final del documento");
         if (existenErrores){
@@ -248,7 +287,7 @@ public class CocolRReader {
             }
         }
 
-        return inicio && end && !existenErrores;
+        return inicio && end && !existenErrores && identIguales;
     }
 
 
@@ -307,8 +346,7 @@ public class CocolRReader {
         }
         catch (Exception e)
         {
-            System.err.format("Exception occurred trying to read '%s'.", filename);
-            e.printStackTrace();
+            System.out.print("No existe el archivo '" +  filename + "'\n");
             return null;
         }
     }
