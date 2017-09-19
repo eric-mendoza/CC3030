@@ -1,3 +1,5 @@
+package GeneradorLexers;
+
 import java.util.*;
 
 /**
@@ -7,7 +9,7 @@ import java.util.*;
  * @author Eric Mendoza
  * @version 1.0
  * @since 23/07/207
- * @link https://github.com/shaunak1111/Directed-Graph-Implementation-java/blob/master/DirectedGraph.java
+ * @link https://github.com/shaunak1111/Directed-Graph-Implementation-java/blob/master/GeneradorLexers.DirectedGraph.java
  */
 
 public class DirectedGraph {
@@ -22,7 +24,7 @@ public class DirectedGraph {
     private  HashSet<String> alphabet = new HashSet<String>();  // Simbolos aceptados por el automata
 
     /**
-     * Contructor de la clase DirectedGraph
+     * Contructor de la clase GeneradorLexers.DirectedGraph
      */
     public DirectedGraph(){}
 
@@ -36,6 +38,8 @@ public class DirectedGraph {
         boolean Final, Start;
         int  id;
         LinkedList<edgeContents> edges;
+        private int precedence;
+        private String tokenType;
 
         /**
          * Constructor
@@ -117,6 +121,22 @@ public class DirectedGraph {
             Integer id2 = o.getId();
             return id1.compareTo(id2);
         }
+
+        public int getPrecedence() {
+            return precedence;
+        }
+
+        public void setPrecedence(int precedence) {
+            this.precedence = precedence;
+        }
+
+        public String getTokenType() {
+            return tokenType;
+        }
+
+        public void setTokenType(String tokenType) {
+            this.tokenType = tokenType;
+        }
     }
 
     /**
@@ -194,6 +214,7 @@ public class DirectedGraph {
     public void addNode(DirectedGraph g, NodeClass nodeToAdd){
         g.nodes.add(nodeToAdd);
         g.nodeMap.put(nodeToAdd.id, nodeToAdd);
+
     }
 
     /**

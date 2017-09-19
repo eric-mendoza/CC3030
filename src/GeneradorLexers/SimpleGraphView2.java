@@ -1,4 +1,4 @@
-/*
+package GeneradorLexers;/*
  * SimpleGraphView.java
  *
  * Created on March 8, 2007, 7:49 PM
@@ -6,24 +6,11 @@
  * Copyright March 8, 2007 Grotto Networking
  */
 
-import edu.uci.ics.jung.algorithms.layout.CircleLayout;
-import edu.uci.ics.jung.algorithms.layout.Layout;
 import edu.uci.ics.jung.graph.Graph;
-import edu.uci.ics.jung.graph.SparseGraph;
 import edu.uci.ics.jung.graph.SparseMultigraph;
 import edu.uci.ics.jung.graph.util.EdgeType;
-import edu.uci.ics.jung.visualization.BasicVisualizationServer;
-import edu.uci.ics.jung.visualization.decorators.ToStringLabeller;
-import edu.uci.ics.jung.visualization.renderers.Renderer.VertexLabel.Position;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Paint;
-import java.awt.Stroke;
-import java.util.HashSet;
+
 import java.util.LinkedList;
-import javax.swing.JFrame;
-import org.apache.commons.collections15.Transformer;
 
 /**
  *

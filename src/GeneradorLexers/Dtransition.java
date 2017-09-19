@@ -1,3 +1,5 @@
+package GeneradorLexers;
+
 /**
  * La presente clase tiene como objetivo simular una Dtrancision para un DFA
  * @author Eric Mendoza
@@ -13,7 +15,7 @@ public class Dtransition {
     String transition;
 
     /**
-     * Contructor de la clase de Dtransition.
+     * Contructor de la clase de GeneradorLexers.Dtransition.
      * @param startingState indica desde que nodo inicia la transicion
      * @param finishingState indica a que nodo se dirige la transicion
      * @param transition indica la condicion para que se cumpla la transicion

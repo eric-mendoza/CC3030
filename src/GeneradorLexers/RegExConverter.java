@@ -1,3 +1,5 @@
+package GeneradorLexers;
+
 import java.util.*;
 
 /**
@@ -55,7 +57,7 @@ public class RegExConverter {
                 res += c1;
 
                 // Agregar caracter de escape
-                if (!c1.equals('\\')){
+                if (!c1.equals('\\') || usedEscape){
                     // Si el primer caracter no es un parentesis y el segundo no es un operador
                     if ((!c1.equals('(') && !c2.equals(')') && !allOperators.contains(c2) && !binaryOperators.contains(c1)) || (usedEscape && !c2.equals(')') && !allOperators.contains(c2))) {
                         res += '.';

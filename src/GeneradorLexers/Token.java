@@ -1,3 +1,5 @@
+package GeneradorLexers;
+
 /**
  * La presente clase tiene como objetivo representar un token, para guardar así información pertinente importante
  * @author Eric Mendoza

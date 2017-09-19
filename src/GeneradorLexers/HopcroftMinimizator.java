@@ -1,3 +1,5 @@
+package GeneradorLexers;
+
 import java.util.*;
 
 /**

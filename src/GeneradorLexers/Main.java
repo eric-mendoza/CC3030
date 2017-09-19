@@ -1,6 +1,6 @@
+package GeneradorLexers;
+
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 /**
@@ -14,17 +14,22 @@ public class Main {
         // Ingreso del nombre del archivo con la descripcion lexica
         Scanner scanner = new Scanner(System.in);
         System.out.println("Ingrese el nombre del archivo con la especificación léxica en Cocol: ");
-        String archivoEspecificacionLexica = scanner.next();
+        String archivoEspecificacionLexica = "cocolr";
 
         CocolRReader cocolRReader = new CocolRReader();
 
         // Verificar que el archivo este bien estructurado
         System.out.println("Cargando...");
         if (cocolRReader.analizeCocolRSyntax(archivoEspecificacionLexica + ".txt")){
-            System.out.println("Se acepta el documento");
+            if (cocolRReader.generateLexer()){
+                cocolRReader.generateLexerJavaFile();
+                System.out.println("Se generó el lexer.");
+            } else {
+                System.err.println("Error en la especificación léxica.\nNo se generó el lexer");
+            }
 
         } else {
-            System.out.println("Error en la especificacion lexica. \nNo se generó el lexer.");
+            System.err.println("Error en la especificacion lexica. \nNo se generó el lexer.");
         }
     }
 

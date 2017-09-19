@@ -1,3 +1,5 @@
+package GeneradorLexers;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -112,7 +114,7 @@ public class RegExToDFA {
                 // Ver si contiene la posicion de aceptacion el conjunto nuevo
                 isFinal = conjuntoEstadosAlcanzados.contains(posicionAceptacion);
 
-                // Crear Dstate que se podria agregar
+                // Crear GeneradorLexers.Dstate que se podria agregar
                 estadoTemporalAgregado = new Dstate<Integer>(conjuntoEstadosAlcanzados, false, isFinal);
 
                 // Verificar que estadoTemporalAgregado no exista en Destados

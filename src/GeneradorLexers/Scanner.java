@@ -1,3 +1,5 @@
+package GeneradorLexers;
+
 /**
  * La presente clase tiene como objetivo leer un archivo Cocol/R y construir un lexer
  * @author Eric Mendoza

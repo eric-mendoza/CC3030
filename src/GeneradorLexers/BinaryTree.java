@@ -1,7 +1,9 @@
+package GeneradorLexers;
+
 import java.util.HashSet;
 
 /**
- * A BinaryTree consists of "nodes"--each "node" is itself a BinaryTree.
+ * A GeneradorLexers.BinaryTree consists of "nodes"--each "node" is itself a GeneradorLexers.BinaryTree.
  * Each node has a parent (unless it is the root), may have a left child,
  * and may have a right child. This class implements loop-free binary trees,
  * allowing shared subtrees.
@@ -22,7 +24,7 @@ public class BinaryTree {
     private boolean nullable;
 
     /**
-     * Constructor for BinaryTree.
+     * Constructor for GeneradorLexers.BinaryTree.
      *
      * @param value The value to be placed in the root.
      * @param leftChild The left child of the root (may be null).
@@ -39,7 +41,7 @@ public class BinaryTree {
     }
 
     /**
-     * Constructor for a BinaryTree leaf node (that is, with no children).
+     * Constructor for a GeneradorLexers.BinaryTree leaf node (that is, with no children).
      *
      * @param value The value to be placed in the root.
      */
@@ -49,7 +51,7 @@ public class BinaryTree {
 
 
     /**
-     * Getter method for the value in this BinaryTree node.
+     * Getter method for the value in this GeneradorLexers.BinaryTree node.
      *
      * @return The value in this node.
      */
@@ -58,7 +60,7 @@ public class BinaryTree {
     }
 
     /**
-     * Getter method for left child of this BinaryTree node.
+     * Getter method for left child of this GeneradorLexers.BinaryTree node.
      *
      * @return The left child (<code>null</code> if no left child).
      */
@@ -67,7 +69,7 @@ public class BinaryTree {
     }
 
     /**
-     * Getter method for right child of this BinaryTree node.
+     * Getter method for right child of this GeneradorLexers.BinaryTree node.
      *
      * @return The right child (<code>null</code> if no right child).
      */
@@ -76,7 +78,7 @@ public class BinaryTree {
     }
 
     /**
-     * Sets the left child of this BinaryTree node to be the
+     * Sets the left child of this GeneradorLexers.BinaryTree node to be the
      * given subtree. If the node previously had a left child,
      * it is discarded. Throws an <code>IllegalArgumentException</code>
      * if the operation would cause a loop in the binary tree.
@@ -94,7 +96,7 @@ public class BinaryTree {
     }
 
     /**
-     * Sets the right child of this BinaryTree node to be the
+     * Sets the right child of this GeneradorLexers.BinaryTree node to be the
      * given subtree. If the node previously had a right child,
      * it is discarded. Throws an <code>IllegalArgumentException</code>
      * if the operation would cause a loop in the binary tree.
@@ -112,7 +114,7 @@ public class BinaryTree {
     }
 
     /**
-     * Sets the value in this BinaryTree node.
+     * Sets the value in this GeneradorLexers.BinaryTree node.
      *
      * @param value The new value.
      */
@@ -123,15 +125,15 @@ public class BinaryTree {
     /**
      * Tests whether this node is a leaf node.
      *
-     * @return <code>true</code> if this BinaryTree node has no children.
+     * @return <code>true</code> if this GeneradorLexers.BinaryTree node has no children.
      */
     public boolean isLeaf() {
         return leftChild == null && rightChild == null;
     }
 
     /**
-     * Tests whether this BinaryTree is equal to the given object.
-     * To be considered equal, the object must be a BinaryTree,
+     * Tests whether this GeneradorLexers.BinaryTree is equal to the given object.
+     * To be considered equal, the object must be a GeneradorLexers.BinaryTree,
      * and the two binary trees must have equal values in their
      * roots, equal left subtrees, and equal right subtrees.
      *
@@ -182,10 +184,10 @@ public class BinaryTree {
     }
 
     /**
-     * Returns a String representation of this BinaryTree.
+     * Returns a String representation of this GeneradorLexers.BinaryTree.
      *
      * @see java.lang.Object#toString()
-     * @return A String representation of this BinaryTree.
+     * @return A String representation of this GeneradorLexers.BinaryTree.
      */
     public String toString() {
         if (isLeaf()) {
@@ -206,7 +208,7 @@ public class BinaryTree {
 
     /**
      * Computes a hash code for the complete binary tree rooted
-     * at this BinaryTree node.
+     * at this GeneradorLexers.BinaryTree node.
      *
      * @return A hash code for the binary tree with this root.
      * @see java.lang.Object#hashCode()
@@ -223,7 +225,7 @@ public class BinaryTree {
     }
 
     /**
-     * Prints the binary tree rooted at this BinaryTree node.
+     * Prints the binary tree rooted at this GeneradorLexers.BinaryTree node.
      */
     public void print() {
         print(this, 0);

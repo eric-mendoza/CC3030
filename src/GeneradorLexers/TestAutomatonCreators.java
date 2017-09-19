@@ -1,6 +1,5 @@
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+package GeneradorLexers;
+
 import java.util.Scanner;
 
 /**
@@ -69,7 +68,7 @@ public class TestAutomatonCreators {
          * Transformar de NFA -> DFA por subconjuntos
          */
         startTime = System.nanoTime();
-        //DirectedGraph dfa = nfaToDFA.convert(nfa);
+        //GeneradorLexers.DirectedGraph dfa = nfaToDFA.convert(nfa);
         finishTime = System.nanoTime();
 
         System.out.println("Tiempo en transformar NFA a DFA (Por subconjuntos): ");
@@ -97,7 +96,7 @@ public class TestAutomatonCreators {
          * Simplificar DFA construido por subconjuntos
          */
         startTime = System.nanoTime();
-        //DirectedGraph dfaSimplificado = hopcroftMinimizator.minimizateDFA(dfa);
+        //GeneradorLexers.DirectedGraph dfaSimplificado = hopcroftMinimizator.minimizateDFA(dfa);
         finishTime = System.nanoTime();  // Tomar tiempo
 
         // Mostrar tiempo
@@ -264,9 +263,9 @@ public class TestAutomatonCreators {
          * Mostrar Automatas
          */
         AutomataRenderer.renderAutomata(nfa, "NFA");
-        //AutomataRenderer.renderAutomata(dfa, "DFA por subconjuntos");
-        //AutomataRenderer.renderAutomata(dfaSimplificado, "DFA (Por subconjuntos) minimizado");
-        //AutomataRenderer.renderAutomata(dfaDirecto, "DFA por construccion directa");
-        //AutomataRenderer.renderAutomata(dfaDirectoSimplificado, "DFA (Por construccion directa) minimizado");
+        //GeneradorLexers.AutomataRenderer.renderAutomata(dfa, "DFA por subconjuntos");
+        //GeneradorLexers.AutomataRenderer.renderAutomata(dfaSimplificado, "DFA (Por subconjuntos) minimizado");
+        //GeneradorLexers.AutomataRenderer.renderAutomata(dfaDirecto, "DFA por construccion directa");
+        //GeneradorLexers.AutomataRenderer.renderAutomata(dfaDirectoSimplificado, "DFA (Por construccion directa) minimizado");
     }
 }

@@ -1,3 +1,5 @@
+package GeneradorLexers;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -195,7 +197,7 @@ public class NFAToDFA {
                 // Ver si contiene el estado de aceptacion el conjunto
                 isFinal = conjuntoEstadosAlcanzados.contains(nodoFinalNfa);
 
-                // Crear Dstate que se podria agregar
+                // Crear GeneradorLexers.Dstate que se podria agregar
                 estadoTemporalAgregado = new Dstate<DirectedGraph.NodeClass>(conjuntoEstadosAlcanzados, false, isFinal);
 
                 // Verificar que estadoTemporalAgregado no exista en Destados
