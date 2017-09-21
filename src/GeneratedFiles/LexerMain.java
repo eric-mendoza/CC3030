@@ -11,6 +11,7 @@ public class LexerMain {
         // Tokens <type, lexema>
         ArrayList<Pair<String, String>> tokens = new ArrayList<Pair<String, String>>();
 
+
         // Lexer
         Lexer lexer = new Lexer();
 

@@ -32,24 +32,370 @@ public class CocolRReader {
     /**
      * Guardar los patrones de cada seccion en hashmaps
      */
-    private HashMap<String, String> caracteres = new HashMap<String, String>();  // Se va a guardar <iden, Conjunto>
+    private HashMap<String, String> caracteres = new HashMap<String, String>();  // Se va a guardar, regex sin analizar <iden, Conjunto>
     private ArrayList<String> caracteresKeysOrdered = new ArrayList<String>();  // Se guardan las llaves para acceder a ellas en orden despues
 
+    private ArrayList<String> tokensEnBruto = new ArrayList<String>();  // Guarda las lineas que contienen tokens
 
     private ArrayList<String> palabrasIgnoradas = new ArrayList<String>();  // Se va a guardar solo los caracteres a ignorar en bruto
     private ArrayList<String> whitespace = new ArrayList<String>();  // Cadenas de caracteres que no se toman en cuenta
 
 
     /**
-     * Regex para el GeneratedFiles.Lexer a generar
+     * Regex para el lexer a generar
      */
     private HashMap<String, String> caracteresRegex = new HashMap<String, String>();
     private HashMap<String, String> palabrasReservadasRegex = new HashMap<String, String>();  // Se va a guardar <iden, keyword>
+    private HashMap<String, String> tokensRegex = new HashMap<String, String>();  // <tokenIden, tokenRegex>
+
+
+
+    /**
+     * Metodo que tiene como objetivo verificar que esten correctamente declaradas cada una de las secciones de cocol/r
+     * Tambien, guarda las lineas que contienen las declaraciones de los diferentes conjuntos
+     * @param filename Documento con especificacion lexica
+     * @return True, si la sintax es correcta; False, si existen errores
+     */
+    public boolean analizeCocolRSyntax(String filename){
+        /**
+         * Crear los automatas declarados en Cocol/R
+         */
+        // Regex mas basicos
+        String anyButQuoteRegex = digitRegex + "|(\\.)|#|$|%|&|/|=|¡|\'|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;   // El esparcio podria fallar
+        String anyButApostropheRegex = digitRegex + "|(\\.)|#|$|%|&|/|=|¡|\"|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;
+
+        // Vocabulary
+        String numberRegex = "(" + digitRegex + ")(" + digitRegex + ")*";
+        String stringRegex = "\"(" + anyButQuoteRegex + ")*\"";
+        String charRegexBasic = "'(" + anyButApostropheRegex + ")'";
+
+        // CHARACTERS regexs
+        String charRegex = "((" + charRegexBasic + ")|( *CHR *\\( *" + numberRegex  + " *\\) *))";
+        String basicSetRegex = "(" + stringRegex + ")|(" + identRegex + ")|(" + charRegex + "( *\\.\\. *" + charRegex + " *)?)|(ANY)";
+        String setRegex = "(" + basicSetRegex + ")( *(\\+|-) *(" +  basicSetRegex + "))*";
+        String setDeclRegex = " *(" + identRegex + ") *= *" + "(" + setRegex + ") *\\. *";
+
+        // KEYWORDS regex
+        String keywordDeclRegex = "(" + identRegex + ") *= *(" + stringRegex +") *\\.";
+
+        // WhiteSpace
+        String whiteSpaceDecl = " *IGNORE *(" + setRegex + ") *\\. *";
+
+        /**
+         * Crear los automatas para verificar cada seccion
+         */
+        // Sintax de secciones
+        DirectedGraph keywordDeclAutomata = createAutomaton(keywordDeclRegex);
+        DirectedGraph setsDeclAutomata = createAutomaton(setDeclRegex);
+        DirectedGraph whitespaceDeclarationAutomata = createAutomaton(whiteSpaceDecl);
+        /* No se incluye sintax de tokens por complejidad */
+
+        // Crear e-closure de cada automata
+        NFAToDFA keywordDeclAutomataEClosure = new NFAToDFA();
+        keywordDeclAutomataEClosure.generateSimpleEClosure(keywordDeclAutomata);
+        NFAToDFA setsDeclAutomataEClosure = new NFAToDFA();
+        setsDeclAutomataEClosure.generateSimpleEClosure(setsDeclAutomata);
+        NFAToDFA whitespaceDeclarationAutomataEClosure = new NFAToDFA();
+        whitespaceDeclarationAutomataEClosure.generateSimpleEClosure(whitespaceDeclarationAutomata);
+
+        /**
+         Crear variables para la creacion de automatas de verificacion de sintax
+         */
+        List<String> documento = readFile(filename);
+        if (documento == null){
+            return false;
+        }
+
+        boolean inicio = false;
+        boolean characters = false;
+        int inicioCharacters = 0;
+        boolean charactersCorrectly;
+        int inicioKeywords = 0;
+        boolean keywords = false;
+        boolean keywordsCorrectly;
+        int inicioTokens = 0;
+        boolean tokens = false;
+        boolean whitespace = false;
+        boolean whitespaceCorrectly;
+        int inicioWhiteSpace = 0;
+        boolean existenErrores = false;
+        ArrayList<String> errores = new ArrayList<String>();
+        String identInicio = "", identFinal = "";
+        boolean identIguales = false;
+        boolean end = false;
+
+        int lineaInicio = 0;
+        int lineaFinal = 0;
+        if (documento != null) {
+            // Encontrar inicio
+            for (int i = 0; i < documento.size(); i++) {
+                inicio = documento.get(i).contains("COMPILER");  // Devuelve True cuando encuentra COMPILER
+                if (inicio){
+                    lineaInicio = i;  // Guarda posicion inicio
+                    lexerJavaFileName = documento.get(i).split(" ")[1];  // Guardar nombre para futuro lexer
+                    identInicio = documento.get(i).split(" ")[1] + ".";  // Guarda identificador de inicio. Se le agrego un punto para coincidir con el del final
+                    break;
+                }
+            }
+
+            // Encontrar posicion CHARACTERS declaration
+            for (int i = lineaInicio + 1; i < documento.size(); i++) {
+                characters = documento.get(i).contains("CHARACTERS"); // Devuelve True cuando encuentra CHARACTERS
+                if (characters) {
+                    inicioCharacters = i;
+                    break;
+                }
+            }
+
+            // Encontrar Keywords Declaration
+            int inicioBusquedaKeywords;
+
+            if (characters){  // Ahorrarse un par de lineas de busqueda viendo si existe CHARACTERS
+                inicioBusquedaKeywords = inicioCharacters + 1;
+            } else {
+                inicioBusquedaKeywords = lineaInicio + 1;
+            }
+
+            for (int i = inicioBusquedaKeywords; i < documento.size(); i++) {
+                keywords = documento.get(i).contains("KEYWORDS");  // Devuelve True si encuentra KEYWORDS
+                if (keywords) {
+                    inicioKeywords = i;
+                    break;
+                }
+            }
+
+            // Encontrar Token declaration
+            int inicioBusquedaTokens;
+
+            if (keywords){
+                inicioBusquedaTokens = inicioKeywords + 1;
+            } else if (characters) {
+                inicioBusquedaTokens = inicioCharacters + 1;
+            } else {
+                inicioBusquedaTokens = lineaInicio + 1;
+            }
+
+            for (int i = inicioBusquedaTokens; i < documento.size(); i++) {
+                tokens = documento.get(i).contains("TOKENS");
+                if (tokens){
+                    inicioTokens = i;
+                    break;
+                }
+            }
+
+
+            // Encontrar WhiteSpace declaration
+            int inicioBusquedaWhiteSpace;
+
+            if (tokens){
+                inicioBusquedaWhiteSpace = inicioTokens + 1;
+            } else if (keywords){
+                inicioBusquedaWhiteSpace = inicioKeywords + 1;
+            } else if (characters) {
+                inicioBusquedaWhiteSpace = inicioCharacters + 1;
+            } else {
+                inicioBusquedaWhiteSpace = lineaInicio + 1;
+            }
+
+            for (int i = inicioBusquedaWhiteSpace; i < documento.size(); i++) {
+                whitespace = documento.get(i).contains("IGNORE");  // Si encuentra IGNORE indica donde esta
+                if (whitespace){
+                    inicioWhiteSpace = i;
+                    break;
+                }
+            }
+
+            // Encontrar END declaration
+            int inicioBusquedaFinal;
+            if (whitespace){
+                inicioBusquedaFinal = inicioWhiteSpace + 1;
+            } else if (tokens) {
+                inicioBusquedaFinal = inicioTokens + 1;
+            } else if (keywords){
+                inicioBusquedaFinal = inicioKeywords + 1;
+            } else if (characters){
+                inicioBusquedaFinal = inicioCharacters + 1;
+            } else {
+                inicioBusquedaFinal = lineaInicio + 1;
+            }
+
+            for (int i = inicioBusquedaFinal; i < documento.size(); i++) {
+                end = documento.get(i).contains("END");
+                if (end) {
+                    lineaFinal = i;
+                    identFinal = documento.get(i).split(" ")[1];  // Guarda identificador de final
+                    break;
+                }
+            }
+
+
+            // CHARACTERS: Verificar que se hayan ingresado correctamente los characters
+            if (characters){  // Si se encontro esta seccion...
+                System.out.println("Cargando characters...");
+                String linea;
+
+                // Establecer final de loop
+                int finBusquedaCharacters;
+                if (keywords){
+                    finBusquedaCharacters = inicioKeywords;
+                }
+                else if (tokens){
+                    finBusquedaCharacters = inicioTokens;
+                }
+                else if (whitespace){
+                    finBusquedaCharacters = inicioWhiteSpace;
+                }
+                else {
+                    finBusquedaCharacters = lineaFinal;
+                }
+
+                // Analizar cada linea
+                for (int i = inicioCharacters + 1; i < finBusquedaCharacters; i++) {
+                    linea = documento.get(i);
+                    if (!linea.equals("")){
+                        charactersCorrectly = simulator.simulateNFA(setsDeclAutomata, linea, setsDeclAutomataEClosure);  // Verificar que la linea este bien escrita
+
+                        // Si se encuentra una linea correcta
+                        if (charactersCorrectly) {
+                            String[] lineSections = linea.split("=");
+                            Pair<Integer, String> identificatorCharacterPair = identifyIdentificator(0, lineSections[0].toCharArray());
+                            caracteresKeysOrdered.add(identificatorCharacterPair.getValue());
+                            caracteres.put(identificatorCharacterPair.getValue(), lineSections[1]);  // Guardar ident y conjunto
+
+                        } else {
+                            errores.add("Error al declarar un character. Linea: " + String.valueOf(i + 1));
+                            existenErrores = true;
+                            break;
+                        }
+                    }
+                }
+            }
+
+
+            // KEYQORDS: Verificar que se hayan ingresado correctamente los keywords
+            if (keywords){  // Si existe esta seccion
+                String linea;
+                System.out.println("Cargando keywords...");
+
+                // establecer final de loop
+                int finBusquedaKeywords;
+                if (tokens){
+                    finBusquedaKeywords = inicioTokens;
+                }
+                else if (whitespace){
+                    finBusquedaKeywords = inicioWhiteSpace;
+                }
+                else {
+                    finBusquedaKeywords = lineaFinal;
+                }
+
+                for (int i = inicioKeywords + 1; i < finBusquedaKeywords; i++) {
+                    linea = documento.get(i);
+                    if (!linea.equals("")){
+                        keywordsCorrectly = simulator.simulateNFA(keywordDeclAutomata, linea);
+
+                        // Si se encuentra una linea incorrecta
+                        if (keywordsCorrectly) {
+                            String[] seccionesLinea = linea.split("=");
+                            // Limpiar correctamente el identificador
+                            Pair<Integer, String> identificatorCharacterPair = identifyIdentificator(0, seccionesLinea[0].toCharArray());
+
+                            // Corregir el regex de la palabra reservada
+                            String newRegex = seccionesLinea[1];
+                            int inicioNewRegex = newRegex.indexOf("\"") + 1;
+                            int endNewRegex = newRegex.lastIndexOf("\"");
+
+                            newRegex = newRegex.substring(inicioNewRegex, endNewRegex);
+
+                            palabrasReservadasRegex.put(identificatorCharacterPair.getValue(), newRegex);
+
+                        } else {
+                            errores.add("Error al declarar un keyword. Linea: " + String.valueOf(i + 1));
+                            existenErrores = true;
+                            break;
+                        }
+
+                    }
+                }
+            }
+
+            // TOKENS: Guardar las lineas que contienen tokens
+            if (tokens){
+                String linea;
+                System.out.println("Cargando tokens...");
+
+                // Establecer final de loop de busqueda
+                int finBusquedaTokens;
+                if (whitespace){
+                    finBusquedaTokens = inicioWhiteSpace;
+                }
+                else {
+                    finBusquedaTokens = lineaFinal;
+                }
+
+                // Obtener las lineas con tokens
+                for (int i = inicioTokens + 1; i < finBusquedaTokens; i++) {
+                    linea = documento.get(i);
+                    tokensEnBruto.add(linea);
+                }
+            }
+
+            // WHITESPACE: Verificar que se hayan ingresado correctamente los whitespace
+            if (whitespace){
+                String linea;
+                System.out.println("Cargando whitespaces...");
+
+
+                for (int i = inicioWhiteSpace; i < lineaFinal; i++) {
+                    linea = documento.get(i);
+                    if (!linea.equals("")){
+                        whitespaceCorrectly = simulator.simulateNFA(whitespaceDeclarationAutomata, linea);
+
+                        // Si se encuentra una linea incorrecta
+                        if (whitespaceCorrectly) {
+                            String[] seccionesLinea = linea.split("IGNORE");
+                            String palabra = seccionesLinea[1];
+                            String nuevapalabra = "";
+                            for (int j = 0; j < palabra.length() - 1; j++) {
+                                char c = palabra.charAt(j);
+                                if (c == '\\'){
+                                    nuevapalabra += "\\\\\\\\";
+                                } else {
+                                    nuevapalabra += c;
+                                }
+                            }
+
+                            palabrasIgnoradas.add(nuevapalabra);
+                        } else {
+                            errores.add("Error al declarar un whitespace. Linea: " + String.valueOf(i + 1));
+                            existenErrores = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Revisar errores
+        if (inicio && end){
+            identIguales = identFinal.equals(identInicio);
+        }
+        if (!identIguales) System.err.println("Error: Los identificadores de inicio y final no coinciden.");
+        if (!inicio) System.err.println("Error: Declaracion de inicio incorrecta");
+        if (!end) System.err.println("Error: No se coloco correctamente el final del documento");
+        if (existenErrores){
+            for (String error : errores) {
+                System.err.println(error);
+            }
+        }
+
+        return inicio && end && !existenErrores && identIguales;
+    }
+
 
 
 
     public boolean generateLexer(){
-        boolean existenErrores = false;
         // IGNORE characters
         for (String palabra : palabrasIgnoradas) {
 
@@ -110,6 +456,9 @@ public class CocolRReader {
                                     newRegex = result.getValue();
                                     break;
 
+                                case ' ' : break;
+                                case '\t': break;
+
                                 default:
                                     if (whitespace.contains(String.valueOf(letter))){
                                         break;
@@ -154,6 +503,9 @@ public class CocolRReader {
                                     i = result.getKey();
                                     newRegex = result.getValue();
                                     break;
+
+                                case ' ' : break;
+                                case '\t': break;
 
                                 default:
                                     if (whitespace.contains(String.valueOf(letter))){
@@ -212,6 +564,9 @@ public class CocolRReader {
                             }
                         }
                         break;
+
+                    case ' ' : break;
+                    case '\t': break;
 
                     case 'C':  // Podría ser un CHR()
                         // Verificar si existe el resto de declaracion CHR(
@@ -283,8 +638,223 @@ public class CocolRReader {
 
         }
 
+        // TOKENS regex
+        // Por cada lina en bruto
+        String tokenIdentificator, tokenRegex;
+        for (String posibleToken : tokensEnBruto) {
+            if (!posibleToken.equals("")){
+                if (posibleToken.contains("=")){
+                    // Dividir token
+                    String[] tokenBrute = posibleToken.split("=");
+
+                    // Obtener identificador token
+                    result = identifyIdentificator(0, tokenBrute[0].toCharArray());
+                    if (result != null){
+                        tokenIdentificator = result.getValue();
+
+                        // Obtener el regex del cuerpo de token
+                        tokenRegex = identifyTokenRegex(tokenBrute[1], tokenIdentificator);
+
+                        // Crear nuevo token
+                        if (tokenRegex != null){
+                            tokensRegex.put(tokenIdentificator, tokenRegex);
+                        } else {
+                            System.err.println("Error: Token mal declarado: '" + tokenBrute[1] + "'.");
+                            return false;
+                        }
+
+                    } else {
+                        System.err.println("Error: " + tokenBrute[0] + " no es un identificador correcto para token.");
+                        return false;
+                    }
+                }
+
+                // Es un token solo ident
+                else {
+                    // Verificar si el ident esta bien esccrito
+                    result = identifyIdentificator(0, posibleToken.toCharArray());
+                    if (result != null){
+                        tokenIdentificator = tokenRegex = result.getValue();
+                        tokensRegex.put(tokenIdentificator, tokenRegex);
+                    } else {
+                        System.err.println("Error: " + posibleToken + " no es un token. Debe utilizar un ident.");
+                        return false;
+                    }
+                }
+            }
+        }
+
+
+
         return true;
 
+    }
+
+    private String identifyTokenRegex(String tokenExpr, String tokenIdent) {
+        // Examinar sintax
+        boolean goodSintax = verifyPreSyntax(tokenExpr,'[',']');
+        if (!goodSintax) return null;
+
+        goodSintax = verifyPreSyntax(tokenExpr,'{','}');
+        if (!goodSintax) return null;
+
+        // Analizar cada una de las letras
+        String newRegex = "";
+        int p;
+        for(int i = 0; i < tokenExpr.length(); i++){
+            char chr = tokenExpr.charAt(i);
+            switch(chr){
+
+                // SYMBOL: String
+                case '"':
+                    i++;
+                    chr = tokenExpr.charAt(i);
+                    while(chr != '"'){
+                        // Agregar cada letra a nuevo regex
+                        newRegex += chr;
+                        i++;
+
+                        // Verificar si ya termino de leer to do el string
+                        if(i == tokenExpr.length()){
+                            System.err.println("Error: Cerrar comillas para declaracion de String en Token " + tokenIdent);
+                            return null;
+                        }
+
+                        // Obtener siguiente letra
+                        chr =  tokenExpr.charAt(i);
+                    }
+                    break;
+
+                // SYMBOL: Char
+                case '\'':
+                    i++;
+                    chr = tokenExpr.charAt(i);
+                    // Verificar caracteres de escape
+                    if(chr == '\\' && tokenExpr.charAt(i + 2) != '\''){
+                        System.err.println("Error: El char no esta declarado correctamente: '\\" + chr + tokenExpr.charAt(i + 1) + ". Se esperaba: '\\" + chr + "'");
+                        return null;
+                    } else {
+                        newRegex += chr;
+                        i++;
+                    }
+                    break;
+
+                // TOKEN EXPR |
+                case '|':
+                    newRegex += '|';
+                    break;
+
+                // FIN TOKEN DLCR
+                case '.':
+                    // Largo de declaracion de token
+                    i = tokenExpr.length();
+                    break;
+
+                // TOKEN FACTOR: {}
+                case '{':
+                    // Verificar que se cierre
+                    int cantidadLlaves = 1;
+
+                    // Copiar contador
+                    p = i;
+
+                    // Encontrar fin de TOKENEXPR
+                    while(cantidadLlaves != 0 && p < tokenExpr.length() - 1){
+                        p++;
+
+                        if(tokenExpr.charAt(p) == '{'){
+                            cantidadLlaves++;
+
+                        } else if(tokenExpr.charAt(p) == '}'){
+                            cantidadLlaves--;
+                        }
+                    }
+
+                    newRegex += "(" + identifyTokenRegex(tokenExpr.substring(i + 1, p), tokenIdent) + ")*";  // PUEDE DAR OF BY ONEEEEEEEEEEEEEEEEEEEEEEEEEEE
+
+                    // Actualizar contador
+                    i = p;
+                    break;
+
+                // TOKEN FACTOR: []
+                case '[':
+                    int cantidadCorchetes=1;
+                    p = i;
+                    // Encontrar fin de TOKENEXPR en p
+                    while(cantidadCorchetes != 0 && p < tokenExpr.length() - 1){
+                        p++;
+
+                        if(tokenExpr.charAt(p) == '['){
+                            cantidadCorchetes++;
+
+                        } else if(tokenExpr.charAt(p) == ']'){
+                            cantidadCorchetes--;
+                        }
+                    }
+
+                    newRegex += "((" + identifyTokenRegex(tokenExpr.substring(i, p), tokenIdent) + ")?)";
+
+                    // Actualizar contador
+                    i = p;
+                    break;
+
+                // Ignorar espacios en blanco
+                case ' ' : break;
+                case '\t': break;
+
+                // SYMBOL: Podria ser un ident identificado antes
+                default:
+                    Pair<Integer, String> posibleIdentificadorIdentificado = identifyIdentificator(i, tokenExpr.toCharArray());
+
+                    if (posibleIdentificadorIdentificado != null){
+                        i = posibleIdentificadorIdentificado.getKey();
+                        String posibleIdentificador = posibleIdentificadorIdentificado.getValue();
+
+                        // Obtener regex guardado en charactrs
+                        String regexConjuntoIdentificado = caracteresRegex.get(posibleIdentificador);
+
+                        if (regexConjuntoIdentificado != null){
+                            newRegex += "(" + regexConjuntoIdentificado + ")";
+                        } else {
+                            System.err.println("Error: No se ha declarado el identificador: '" + posibleIdentificador + "'.");
+                            return null;
+                        }
+
+
+                    } else {
+                        System.err.println("Error: No se ha declarado correctamente un identificador en tokens");
+                        return null;
+                    }
+
+                    break;
+            }
+        }
+
+        return newRegex;
+    }
+
+    private boolean verifyPreSyntax(String tokenExpr, char char1, char char2) {
+        int characters = 0;
+        char[] tokenExpr1 = tokenExpr.toCharArray();
+
+        // Contar cuantos parentesis/corchetes hay
+        for(int n = 0; n < tokenExpr1.length; n++){
+            if (tokenExpr1[n] == char1)
+                characters++;
+            else if (tokenExpr1[n] == char2)
+                characters--;
+            if(characters < 0){
+                System.err.println("Error: Declaracion incorrecta de token.\n\tVerificar los: " + char2 + ".");
+                return false;
+            }
+        }
+        if(characters!=0){
+            System.err.println("Error: Declaracion incorrecta de token.\n\tVerificar los: " + char1 + ".");
+            return false;
+        }
+
+
+        return true;
     }
 
     private Pair<Integer, String> extractCharRange(int i, char[] futureRegex, String newRegex) {
@@ -412,20 +982,24 @@ public class CocolRReader {
         boolean found = false;
         boolean isIdent = false;  // Para verificar si son identificadores
         while(!found){
-            preNewIdentificator += futureRegex[i];  // Agregar nueva letra al posible identificador
-            i++;  // Aumentar contador
-            isIdent = simulator.simulateNFA(identAutomata, preNewIdentificator, idenNFAToDFA);  // Verificar si es identificadord
+            if (i > futureRegex.length - 1) break;
 
-            if (isIdent){
-                newIdentificator = preNewIdentificator;
-            } else {
-                found = true;
+            char newLetter = futureRegex[i];
+            if (newLetter != ' '){
+                preNewIdentificator += newLetter;  // Agregar nueva letra al posible identificador
+                isIdent = simulator.simulateNFA(identAutomata, preNewIdentificator, idenNFAToDFA);  // Verificar si es identificadord
+
+                if (isIdent){
+                    newIdentificator = preNewIdentificator;
+                } else {
+                    found = true;
+                }
             }
+            if (!found) i++;  // Aumentar contador
         }
-
         i--;  // Disminuir en uno el contador por preview
-
-        return new Pair<Integer, String>(i, newIdentificator);
+        if (simulator.simulateNFA(identAutomata, newIdentificator, idenNFAToDFA)) return new Pair<Integer, String>(i, newIdentificator);
+        else return null;
     }
 
     /**
@@ -457,295 +1031,6 @@ public class CocolRReader {
     }
 
 
-    /**
-     * Metodo que tiene como objetivo verificar que esten correctamente declaradas cada una de las secciones de cocol/r
-     * @param filename Documento con especificacion lexica
-     * @return True, si la sintax es correcta; False, si existen errores
-     */
-    public boolean analizeCocolRSyntax(String filename){
-        /**
-         * Crear los automatas de Cocol/R
-         */
-        // Regex mas basicos
-        String anyButQuoteRegex = digitRegex + "|(\\.)|#|$|%|&|/|=|¡|\'|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;   // El esparcio podria fallar
-        String anyButApostropheRegex = digitRegex + "|(\\.)|#|$|%|&|/|=|¡|\"|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;
-
-        // Vocabulary
-        String numberRegex = "(" + digitRegex + ")(" + digitRegex + ")*";
-        String stringRegex = "\"(" + anyButQuoteRegex + ")*\"";
-        String charRegexBasic = "'(" + anyButApostropheRegex + ")'";
-
-        // Regex de estructura
-        String compilerDeclaration = " *COMPILER  *(" + identRegex + ") *";
-        String endDeclaration = " *END  *(" + identRegex + ") *\\. *";
-        String charactersDeclaration = " *CHARACTERS *";
-        String keywordsDeclaration = " *KEYWORDS *";
-
-        // CHARACTERS regexs
-        String charRegex = "((" + charRegexBasic + ")|( *CHR *\\( *" + numberRegex  + " *\\) *))";
-        String basicSetRegex = "(" + stringRegex + ")|(" + identRegex + ")|(" + charRegex + "( *\\.\\. *" + charRegex + " *)?)|(ANY)";
-        String setRegex = "(" + basicSetRegex + ")( *(\\+|-) *(" +  basicSetRegex + "))*";
-        String setDeclRegex = " *(" + identRegex + ") *= *" + "(" + setRegex + ") *\\. *";
-
-        // KEYWORDS regex
-        String keywordDeclRegex = "(" + identRegex + ") *= *(" + stringRegex +") *\\.";
-
-        // WhiteSpace
-        String whiteSpaceDecl = " *IGNORE *(" + setRegex + ") *\\. *";
-
-        /**
-         * Crear los automatas para verificar cada seccion
-         */
-        DirectedGraph compilerDeclarationAutomata = createAutomaton(compilerDeclaration);
-        DirectedGraph charactersDeclarationAutomata = createAutomaton(charactersDeclaration);
-        DirectedGraph keywordsDeclarationAutomata = createAutomaton(keywordsDeclaration);
-
-        DirectedGraph keywordDeclAutomata = createAutomaton(keywordDeclRegex);
-        DirectedGraph setsDeclAutomata = createAutomaton(setDeclRegex);
-        DirectedGraph endDeclarationAutomata = createAutomaton(endDeclaration);
-        DirectedGraph whitespaceDeclarationAutomata = createAutomaton(whiteSpaceDecl);
-
-        /**
-            Crear variables para la creacion de automatas de verificacion de sintax
-        */
-        List<String> documento = readFile(filename);
-        if (documento == null){
-            return false;
-        }
-
-        boolean inicio = false;
-        boolean characters = false;
-        int inicioCharacters = 0;
-        boolean charactersCorrectly;
-        int inicioKeywords = 0;
-        boolean keywords = false;
-        boolean keywordsCorrectly;
-        boolean whitespace = false;
-        boolean whitespaceCorrectly;
-        int inicioWhiteSpace = 0;
-        boolean existenErrores = false;
-        ArrayList<String> errores = new ArrayList<String>();
-        String identInicio = "", identFinal = "";
-        boolean identIguales = false;
-        boolean end = false;
-
-        int lineaInicio = 0;
-        int lineaFinal = 0;
-        if (documento != null) {
-            // Encontrar inicio
-            for (int i = 0; i < documento.size(); i++) {
-                inicio = simulator.simulateNFA(compilerDeclarationAutomata, documento.get(i));  // Devuelve True cuando encuentra COMPILER
-                if (inicio){
-                    lineaInicio = i;  // Guarda posicion inicio
-                    lexerJavaFileName = documento.get(i).split(" ")[1];  // Guardar nombre para futuro lexer
-                    identInicio = documento.get(i).split(" ")[1] + ".";  // Guarda identificador de inicio. Se le agrego un punto para coincidir con el del final
-                    break;
-                }
-            }
-
-            // Encontrar posicion CHARACTERS declaration
-            for (int i = lineaInicio; i < documento.size(); i++) {
-                characters = simulator.simulateNFA(charactersDeclarationAutomata, documento.get(i));  // Devuelve True cuando encuentra CHARACTERS
-                if (characters) {
-                    inicioCharacters = i;
-                    break;
-                }
-            }
-
-            // Encontrar Keywords Declaration
-            int inicioBusquedaKeywords;
-
-            if (characters){  // Ahorrarse un par de lineas de busqueda viendo si existe CHARACTERS
-                inicioBusquedaKeywords = inicioCharacters;
-            } else {
-                inicioBusquedaKeywords = lineaInicio;
-            }
-
-            for (int i = inicioBusquedaKeywords; i < documento.size(); i++) {
-                keywords = simulator.simulateNFA(keywordsDeclarationAutomata, documento.get(i));  // Devuelve True si encuentra KEYWORDS
-                if (keywords) {
-                    inicioKeywords = i;
-                    break;
-                }
-            }
-
-            // Encontrar WhiteSpace declaration
-            int inicioBusquedaWhiteSpace;
-
-            if (keywords){
-                inicioBusquedaWhiteSpace = inicioKeywords;
-            } else if (characters) {
-                inicioBusquedaWhiteSpace = inicioCharacters;
-            } else {
-                inicioBusquedaWhiteSpace = lineaInicio;
-            }
-
-            for (int i = inicioBusquedaWhiteSpace; i < documento.size(); i++) {
-                whitespace = simulator.simulateNFA(whitespaceDeclarationAutomata, documento.get(i));  // Si encuentra IGNORE indica donde esta
-                if (whitespace){
-                    inicioWhiteSpace = i;
-                    break;
-                }
-            }
-
-            // Encontrar END declaration
-            int inicioBusquedaFinal;
-            if (keywords){
-                inicioBusquedaFinal = inicioKeywords;
-            } else if (characters) {
-                inicioBusquedaFinal = inicioCharacters;
-            } else if (whitespace){
-                inicioBusquedaFinal = inicioWhiteSpace;
-            } else {
-                inicioBusquedaFinal = lineaInicio;
-            }
-
-            for (int i = inicioBusquedaFinal; i < documento.size(); i++) {
-                end = simulator.simulateNFA(endDeclarationAutomata, documento.get(i));  // Busca la palabra END
-                if (end) {
-                    lineaFinal = i;
-                    identFinal = documento.get(i).split(" ")[1];  // Guarda identificador de final
-                    break;
-                }
-            }
-
-
-            // Verificar que se hayan ingresado correctamente los characters
-            if (characters){  // Si se encontro esta seccion...
-                System.out.println("Cargando characters...");
-                String linea;
-
-                // Establecer final de loop
-                int finBusquedaCharacters;
-                if (keywords){
-                    finBusquedaCharacters = inicioKeywords;
-                }
-                else if (whitespace){
-                    finBusquedaCharacters = inicioWhiteSpace;
-                }
-                else {
-                    finBusquedaCharacters = lineaFinal;
-                }
-
-                // Analizar cada linea
-                for (int i = inicioCharacters + 1; i < finBusquedaCharacters; i++) {
-                    linea = documento.get(i);
-                    if (!linea.equals("")){
-                        charactersCorrectly = simulator.simulateNFA(setsDeclAutomata, linea);  // Verificar que la linea este bien escrita
-
-                        // Si se encuentra una linea correcta
-                        if (charactersCorrectly) {
-                            String[] lineSections = linea.split("=");
-                            Pair<Integer, String> identificatorCharacterPair = identifyIdentificator(0, lineSections[0].toCharArray());
-                            caracteresKeysOrdered.add(identificatorCharacterPair.getValue());
-                            caracteres.put(identificatorCharacterPair.getValue(), lineSections[1]);  // Guardar ident y conjunto
-
-                        } else {
-                            errores.add("Error al declarar un character. Linea: " + String.valueOf(i + 1));
-                            existenErrores = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-
-            // Verificar que se hayan ingresado correctamente los keywords
-            if (keywords){  // Si existe esta seccion
-                String linea;
-                System.out.println("Cargando keywords...");
-
-                // establecer final de loop
-                int finBusquedaKeywords;
-                if (whitespace){
-                    finBusquedaKeywords = inicioWhiteSpace;
-                }
-                else {
-                    finBusquedaKeywords = lineaFinal;
-                }
-                for (int i = inicioKeywords + 1; i < finBusquedaKeywords; i++) {
-                    linea = documento.get(i);
-                    if (!linea.equals("")){
-                        keywordsCorrectly = simulator.simulateNFA(keywordDeclAutomata, linea);
-
-                        // Si se encuentra una linea incorrecta
-                        if (keywordsCorrectly) {
-                            String[] seccionesLinea = linea.split("=");
-                            // Limpiar correctamente el identificador
-                            Pair<Integer, String> identificatorCharacterPair = identifyIdentificator(0, seccionesLinea[0].toCharArray());
-
-                            // Corregir el regex de la palabra reservada
-                            String newRegex = seccionesLinea[1];
-                            int inicioNewRegex = newRegex.indexOf("\"") + 1;
-                            int endNewRegex = newRegex.lastIndexOf("\"");
-
-                            newRegex = newRegex.substring(inicioNewRegex, endNewRegex);
-
-                            palabrasReservadasRegex.put(identificatorCharacterPair.getValue(), newRegex);
-
-                        } else {
-                            errores.add("Error al declarar un keyword. Linea: " + String.valueOf(i + 1));
-                            existenErrores = true;
-                            break;
-                        }
-
-                    }
-                }
-            }
-
-            // Verificar que se hayan ingresado correctamente los whitespace
-            if (whitespace){
-                String linea;
-                System.out.println("Cargando whitespaces...");
-
-
-                for (int i = inicioWhiteSpace; i < lineaFinal; i++) {
-                    linea = documento.get(i);
-                    if (!linea.equals("")){
-                        whitespaceCorrectly = simulator.simulateNFA(whitespaceDeclarationAutomata, linea);
-
-                        // Si se encuentra una linea incorrecta
-                        if (whitespaceCorrectly) {
-                            String[] seccionesLinea = linea.split("IGNORE");
-                            String palabra = seccionesLinea[1];
-                            String nuevapalabra = "";
-                            for (int j = 0; j < palabra.length() - 1; j++) {
-                                char c = palabra.charAt(j);
-                                if (c == '\\'){
-                                    nuevapalabra += "\\\\\\\\";
-                                } else {
-                                    nuevapalabra += c;
-                                }
-                            }
-
-                            palabrasIgnoradas.add(nuevapalabra);
-                        } else {
-                            errores.add("Error al declarar un whitespace. Linea: " + String.valueOf(i + 1));
-                            existenErrores = true;
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Revisar errores
-        if (inicio && end){
-            identIguales = identFinal.equals(identInicio);
-        }
-        if (!identIguales) System.err.println("Error: Los identificadores de inicio y final no coinciden.");
-        if (!inicio) System.err.println("Error: Declaracion de inicio incorrecta");
-        if (!end) System.err.println("Error: No se coloco correctamente el final del documento");
-        if (existenErrores){
-            for (String error : errores) {
-                System.err.println(error);
-            }
-        }
-
-        return inicio && end && !existenErrores && identIguales;
-    }
-
-
     private DirectedGraph createAutomaton(String regex){
         /**
          * Construccion directa de DFA
@@ -753,28 +1038,7 @@ public class CocolRReader {
         // Procesar regex
         RegExToNFA regExToNFA = new RegExToNFA();
         regex = RegExConverter.infixToPostfix(regex);  // Convertir a postfix
-        DirectedGraph nfa = regExToNFA.evaluate(regex);
-
-
-        /**
-         * Simplificar DFA por construccion directa
-         */
-        //GeneradorLexers.HopcroftMinimizator hopcroftMinimizator1 = new GeneradorLexers.HopcroftMinimizator();
-        //GeneradorLexers.DirectedGraph dfaDirectoSimplificado = hopcroftMinimizator1.minimizateDFA(dfaDirecto);
-
-        /**
-         * Simular dfa
-         */
-        //simulator = new GeneradorLexers.Simulator();
-        //boolean resultado = simulator.simulateNFA(dfaDirectoSimplificado, "digit = ANY.");
-        //System.out.println("Estado de aceptacion: " + resultado);
-
-        /**
-         * Graficar para verificar
-         */
-        //GeneradorLexers.AutomataRenderer.renderAutomata(dfaDirectoSimplificado, "DFA (Por construccion directa) minimizado");
-
-        return nfa;
+        return regExToNFA.evaluate(regex);
 
     }
 
@@ -843,11 +1107,12 @@ public class CocolRReader {
                 "        // Agregar Regex identificados\n";
 
         // Regex identificados
-        // 1) Characters / productions
-        for (String identificador : caracteresKeysOrdered) {
+        // 1) Characters / Tokens
+        Set<String> tokens = tokensRegex.keySet();
+        for (String identificador : tokens) {
             programa +=
                     "        tokensTypesAndRegexs.add(new Pair<String, String>(\"" + identificador + "\", \""
-                    + caracteresRegex.get(identificador) + "\"));\n";
+                    + tokensRegex.get(identificador) + "\"));\n";
         }
 
         // 2) Keywords
@@ -880,9 +1145,9 @@ public class CocolRReader {
             precedenceCounter++;
         }
 
-        // 2) Productions
+        // 2) TOKENS
         programa += "\n\n        // Colocar precedencia a resto de tokens\n";
-        for (String tokenType : caracteresKeysOrdered) {
+        for (String tokenType : tokens) {
             programa += "        tokenPrecedence.put(\"" + tokenType + "\", " + precedenceCounter + ");\n";
             precedenceCounter++;
         }
