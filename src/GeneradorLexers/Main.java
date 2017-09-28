@@ -14,7 +14,7 @@ public class Main {
         // Ingreso del nombre del archivo con la descripcion lexica
         Scanner scanner = new Scanner(System.in);
         System.out.println("Ingrese el nombre del archivo con la especificación léxica en Cocol: ");
-        String archivoEspecificacionLexica = "cocolr";
+        String archivoEspecificacionLexica = scanner.next();
 
         CocolRReader cocolRReader = new CocolRReader();
 

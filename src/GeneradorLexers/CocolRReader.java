@@ -67,8 +67,8 @@ public class CocolRReader {
                 "|\u009C|\u009D|\u009E|\u009F|( )|¡|¢|£|¤|¥|¦|§|¨|©|ª|«|¬|\u00AD|®|¯|°|±|²|³|´|µ|¶|·|¸|¹|º|»|¼|½|¾|¿|À|Á|Â|Ã|Ä|Å|Æ|Ç|È|É|Ê|Ë|Ì|Í|Î|Ï|Ð|Ñ|Ò|Ó|Ô|Õ|Ö|×|Ø|Ù|Ú|Û|Ü|Ý|Þ|ß|à|á|â|ã|ä|å|æ|ç|è|é|ê|ë|ì|í|î|ï|ð|ñ|ò|ó|ô|õ|ö|÷|ø|ù|ú|û|ü|ý|þ";
         caracteresRegex.put("ANY", ANY);
 
-        String anyButQuoteRegex = digitRegex + "|(\\.)|#|$|%|&|/|=|¡|\'|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;   // El esparcio podria fallar
-        String anyButApostropheRegex = digitRegex + "|(\\.)|#|$|%|&|/|=|¡|\"|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;
+        String anyButQuoteRegex = digitRegex + "|(\\.)|#|$|%|&|/|(\\\")|=|¡|\'|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;   // El esparcio podria fallar
+        String anyButApostropheRegex = digitRegex + "|(\\.)|#|$|%|&|/|=|¡|(\\\')|\"|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;
 
         // Vocabulary
         String numberRegex = "(" + digitRegex + ")(" + digitRegex + ")*";
@@ -599,7 +599,18 @@ public class CocolRReader {
                     return false;
                 }
                 String nuevaPalabraIgnorar = result.getValue();
-                whitespace.add(nuevaPalabraIgnorar);
+                String nuevapalabra = "";
+                for (int j = 0; j < nuevaPalabraIgnorar.length(); j++) {
+                    char c = nuevaPalabraIgnorar.charAt(j);
+                    if (c == '\\' || c == '\n' || c == '\t' || c == '\r'){
+                        nuevapalabra += "(\\\\" + "u" + Integer.toHexString('÷' | 0x10000).substring(1) + ")";
+                    } else {
+                        nuevapalabra += c;
+                    }
+                }
+
+
+                whitespace.add(nuevapalabra);
 
             } catch (IndexOutOfBoundsException e){
                 System.err.println("Error: Conjunto de whitespace mal declarado: '" + palabra + "'.");
@@ -805,7 +816,7 @@ public class CocolRReader {
                         newRegex += chr;
                         i++;
 
-                        // Verificar si ya termino de leer to do el string
+                        // Verificar si no colocaron las dos comilllas
                         if(i == tokenExpr.length()){
                             System.err.println("Error: Cerrar comillas para declaracion de String en Token " + tokenIdent);
                             return null;
@@ -863,7 +874,7 @@ public class CocolRReader {
                     }
                     String newRegexPrev = identifyTokenRegex(tokenExpr.substring(i, p), tokenIdent);
                     if (newRegexPrev == null){
-                        System.err.println("Error: Declaración incorrecta de token dentro de parentesis.");
+                        System.err.println("Error: Declaración incorrecta de token dentro de llaves.");
                         return null;
                     }
                     newRegex += "(" + newRegexPrev + ")*";  // PUEDE DAR OF BY ONEEEEEEEEEEEEEEEEEEEEEEEEEEE
@@ -891,7 +902,7 @@ public class CocolRReader {
 
                     newRegexPrev = identifyTokenRegex(tokenExpr.substring(i, p), tokenIdent);
                     if (newRegexPrev == null){
-                        System.err.println("Error: Declaración incorrecta de token dentro de parentesis.");
+                        System.err.println("Error: Declaración incorrecta de token dentro de corchetes.");
                         return null;
                     }
                     newRegex += "((" + newRegexPrev + ")?)";
