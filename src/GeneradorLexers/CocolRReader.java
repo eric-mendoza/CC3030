@@ -61,6 +61,12 @@ public class CocolRReader {
          * Crear los automatas declarados en Cocol/R
          */
         // Regex mas basicos
+        String ANY = "(\u0001)|(\u0002)|(\u0003)|(\u0004)|(\u0005)|(\u0006)|(\u0007)" +
+                "|\u000E|\u000F|\u0010|\u0011|\u0012|\u0013|\u0014|\u0015|\u0016|\u0017|\u0018|\u0019|\u001A|\u001B|\u001C|\u001D|\u001E|\u001F|( )|(\\!)|\"|#|$|%|&|'|(\\()|(\\))|(\\*)|(\\+)|,|-|(\\.)|/|0|1|2|3|4|5|6|7|8|9|:|;|<|=|>|(\\?)|@|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|[|(\\\\)|]|^|_|`|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|{|(\\|)|}|~" +
+                "|\u007F|\u0080|\u0081|\u0082|\u0083|\u0084|\u0085|\u0086|\u0087|\u0088|\u0089|\u008A|\u008B|\u008C|\u008D|\u008E|\u008F|\u0090|\u0091|\u0092|\u0093|\u0094|\u0095|\u0096|\u0097|\u0098|\u0099|\u009A|\u009B" +
+                "|\u009C|\u009D|\u009E|\u009F|( )|¡|¢|£|¤|¥|¦|§|¨|©|ª|«|¬|\u00AD|®|¯|°|±|²|³|´|µ|¶|·|¸|¹|º|»|¼|½|¾|¿|À|Á|Â|Ã|Ä|Å|Æ|Ç|È|É|Ê|Ë|Ì|Í|Î|Ï|Ð|Ñ|Ò|Ó|Ô|Õ|Ö|×|Ø|Ù|Ú|Û|Ü|Ý|Þ|ß|à|á|â|ã|ä|å|æ|ç|è|é|ê|ë|ì|í|î|ï|ð|ñ|ò|ó|ô|õ|ö|÷|ø|ù|ú|û|ü|ý|þ";
+        caracteresRegex.put("ANY", ANY);
+
         String anyButQuoteRegex = digitRegex + "|(\\.)|#|$|%|&|/|=|¡|\'|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;   // El esparcio podria fallar
         String anyButApostropheRegex = digitRegex + "|(\\.)|#|$|%|&|/|=|¡|\"|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;
 
@@ -71,7 +77,7 @@ public class CocolRReader {
 
         // CHARACTERS regexs
         String charRegex = "((" + charRegexBasic + ")|( *CHR *\\( *" + numberRegex  + " *\\) *))";
-        String basicSetRegex = "(" + stringRegex + ")|(" + identRegex + ")|(" + charRegex + "( *\\.\\. *" + charRegex + " *)?)|(ANY)";
+        String basicSetRegex = "(" + stringRegex + ")|(" + identRegex + ")|(" + charRegex + "( *\\.\\. *" + charRegex + " *)?)|( *ANY *)";
         String setRegex = "(" + basicSetRegex + ")( *(\\+|-) *(" +  basicSetRegex + "))*";
         String setDeclRegex = " *(" + identRegex + ") *= *" + "(" + setRegex + ") *\\. *";
 
@@ -123,6 +129,7 @@ public class CocolRReader {
         String identInicio = "", identFinal = "";
         boolean identIguales = false;
         boolean end = false;
+
 
         int lineaInicio = 0;
         int lineaFinal = 0;
@@ -250,10 +257,41 @@ public class CocolRReader {
                 }
 
                 // Analizar cada linea
+                char ultimoChar;
+                String subLinea;
+                boolean dotFound = false;
                 for (int i = inicioCharacters + 1; i < finBusquedaCharacters; i++) {
                     linea = documento.get(i);
+                    subLinea = linea;
+
+                    // No tomar en cuenta lineas vacías
                     if (!linea.equals("")){
-                        charactersCorrectly = simulator.simulateNFA(setsDeclAutomata, linea, setsDeclAutomataEClosure);  // Verificar que la linea este bien escrita
+                        // Buscar punto del final
+                        while (!dotFound && i < finBusquedaCharacters){
+                            ultimoChar = subLinea.charAt(subLinea.length() - 1);
+                            if (ultimoChar == '.'){
+                                dotFound = true;
+                            } else {
+                                // Si no se ha encontrado, hay que concatenar con la linea de abajo
+                                i++;
+                                subLinea += documento.get(i);
+                            }
+                        }
+
+                        // Verificar si se encontro
+                        if (dotFound){
+                            // Intercambiar variables, porque sí
+                            linea = subLinea;
+                            dotFound = false;
+                        } else {
+                            errores.add("Error al declarar un character: Hace falta un punto final. Linea: " + String.valueOf(i + 1));
+                            existenErrores = true;
+                            break;
+                        }
+
+                        // Verificar sintax
+                        charactersCorrectly = linea.contains("=");  // Verificar que la linea este bien escrita
+
 
                         // Si se encuentra una linea correcta
                         if (charactersCorrectly) {
@@ -289,10 +327,38 @@ public class CocolRReader {
                     finBusquedaKeywords = lineaFinal;
                 }
 
+                char ultimoChar;
+                String subLinea;
+                boolean dotFound = false;
                 for (int i = inicioKeywords + 1; i < finBusquedaKeywords; i++) {
                     linea = documento.get(i);
+                    subLinea = linea;
                     if (!linea.equals("")){
-                        keywordsCorrectly = simulator.simulateNFA(keywordDeclAutomata, linea);
+                        // Buscar punto del final
+                        while ((i < finBusquedaKeywords) && !dotFound){
+                            ultimoChar = subLinea.charAt(subLinea.length() - 1);
+                            if (ultimoChar == '.'){
+                                dotFound = true;
+                            } else {
+                                // Si no se ha encontrado, hay que concatenar con la linea de abajo
+                                i++;
+                                subLinea += documento.get(i);
+                            }
+                        }
+
+                        // Verificar si se encontro
+                        if (dotFound){
+                            // Intercambiar variables, porque sí
+                            linea = subLinea;
+                            dotFound = false;
+                        } else {
+                            errores.add("Error al declarar un keyword: Hace falta un punto final. Linea: " + String.valueOf(i + 1));
+                            existenErrores = true;
+                            break;
+                        }
+
+                        // Verificar que tenga divisor de asignacion
+                        keywordsCorrectly = linea.contains("=");
 
                         // Si se encuentra una linea incorrecta
                         if (keywordsCorrectly) {
@@ -304,6 +370,13 @@ public class CocolRReader {
                             String newRegex = seccionesLinea[1];
                             int inicioNewRegex = newRegex.indexOf("\"") + 1;
                             int endNewRegex = newRegex.lastIndexOf("\"");
+
+                            if (inicioNewRegex == (endNewRegex + 1)) {
+                                errores.add("Error al declarar el keyword '" + identificatorCharacterPair.getValue() + "', " +
+                                        "faltan unas comillas. Linea: " + String.valueOf(i + 1));
+                                existenErrores = true;
+                                break;
+                            }
 
                             newRegex = newRegex.substring(inicioNewRegex, endNewRegex);
 
@@ -334,9 +407,38 @@ public class CocolRReader {
                 }
 
                 // Obtener las lineas con tokens
+                char ultimoChar;
+                String subLinea;
+                boolean dotFound = false;
                 for (int i = inicioTokens + 1; i < finBusquedaTokens; i++) {
                     linea = documento.get(i);
-                    tokensEnBruto.add(linea);
+                    if (!linea.equals("")){
+                        subLinea = linea;
+                        // Buscar punto del final
+                        while ((i < finBusquedaTokens) && !dotFound){
+                            ultimoChar = subLinea.charAt(subLinea.length() - 1);
+                            if (ultimoChar == '.'){
+                                dotFound = true;
+                            } else {
+                                // Si no se ha encontrado, hay que concatenar con la linea de abajo
+                                i++;
+                                subLinea += documento.get(i);
+                            }
+                        }
+
+                        // Verificar si se encontro
+                        if (dotFound){
+                            // Intercambiar variables, porque sí
+                            linea = subLinea;
+                            dotFound = false;
+                        } else {
+                            errores.add("Error al declarar un token: Hace falta un punto final. Linea: " + String.valueOf(i + 1));
+                            existenErrores = true;
+                            break;
+                        }
+
+                        tokensEnBruto.add(linea);
+                    }
                 }
             }
 
@@ -345,11 +447,37 @@ public class CocolRReader {
                 String linea;
                 System.out.println("Cargando whitespaces...");
 
-
+                char ultimoChar;
+                String subLinea;
+                boolean dotFound = false;
                 for (int i = inicioWhiteSpace; i < lineaFinal; i++) {
                     linea = documento.get(i);
                     if (!linea.equals("")){
-                        whitespaceCorrectly = simulator.simulateNFA(whitespaceDeclarationAutomata, linea);
+                        subLinea = linea;
+                        // Buscar punto del final
+                        while ((i < lineaFinal) && !dotFound){
+                            ultimoChar = subLinea.charAt(subLinea.length() - 1);
+                            if (ultimoChar == '.'){
+                                dotFound = true;
+                            } else {
+                                // Si no se ha encontrado, hay que concatenar con la linea de abajo
+                                i++;
+                                subLinea += documento.get(i);
+                            }
+                        }
+
+                        // Verificar si se encontro
+                        if (dotFound){
+                            // Intercambiar variables, porque sí
+                            linea = subLinea;
+                            dotFound = false;
+                        } else {
+                            errores.add("Error al declarar un whitespace: Hace falta un punto final. Linea: " + String.valueOf(i + 1));
+                            existenErrores = true;
+                            break;
+                        }
+
+                        whitespaceCorrectly = linea.contains("IGNORE");
 
                         // Si se encuentra una linea incorrecta
                         if (whitespaceCorrectly) {
@@ -364,7 +492,7 @@ public class CocolRReader {
                                     nuevapalabra += c;
                                 }
                             }
-
+                            nuevapalabra += ".";
                             palabrasIgnoradas.add(nuevapalabra);
                         } else {
                             errores.add("Error al declarar un whitespace. Linea: " + String.valueOf(i + 1));
@@ -396,247 +524,24 @@ public class CocolRReader {
 
 
     public boolean generateLexer(){
-        // IGNORE characters
-        for (String palabra : palabrasIgnoradas) {
-
-            int indexStart = palabra.indexOf("\"") + 1;
-            int indexFinish = palabra.lastIndexOf("\"");
-
-            String nuevaPalabraIgnorar = palabra.substring(indexStart, indexFinish);
-            whitespace.add(nuevaPalabraIgnorar);
-
-            // SE puede agregar funcionalidad para manejar distintos conjuntos
-        }
-
-        // CHARACTERS Regex
         Pair<Integer, String> result; // Variable de retorno de resultados
-        boolean seEncontroSiguienteParte;
-        // Por cada conjunto
+        String newRegex;
+        // CHARACTERS Regex
         for (String identificador : caracteresKeysOrdered) {
 
             char[] futureRegex = caracteres.get(identificador).toCharArray();  // Obtener patron en bruto
-            String newRegex = "";
-            // Analizar metodo de creacion de conjunto
-            for (int i = 0; i < futureRegex.length; i++) {
 
-                char letter = futureRegex[i];
-
-                switch (letter){
-                    // Caso string con conjunto caracteres
-                    case '"':
-                        result = agregarStringRegex(i, futureRegex, newRegex);
-                        i = result.getKey();
-                        newRegex = result.getValue();
-                        break;
-
-                    case '\'':
-                        // Avanzar al contenido dl char
-                        i++;
-
-                        // Obtener el contenido
-                        newRegex = String.valueOf(futureRegex[i]);
-
-                        // Avanzar uno más para consumir la segunda comilla
-                        i++;
-                        break;
-
-                    case '+':
-                        // Buscar que se va a sumar
-                        seEncontroSiguienteParte = false;
-                        while (!seEncontroSiguienteParte){
-                            i++;  // Avanzar en la declaracion del conjunto
-                            letter = futureRegex[i];
-
-                            switch (letter){
-                                case '"':
-                                    seEncontroSiguienteParte = true;
-                                    newRegex += "|";
-                                    result = agregarStringRegex(i, futureRegex, newRegex);
-                                    i = result.getKey();
-                                    newRegex = result.getValue();
-                                    break;
-
-                                case ' ' : break;
-                                case '\t': break;
-
-                                default:
-                                    if (whitespace.contains(String.valueOf(letter))){
-                                        break;
-                                    } else {
-                                        // En caso que se encuentre un identificador para otro conjunto
-                                        seEncontroSiguienteParte = true;
-
-                                        // Identificar el identificador del conjunto que se desea sumar
-                                        Pair<Integer, String> identificadorResult = identifyIdentificator(i, futureRegex);
-                                        i = identificadorResult.getKey();  // Guardar cuanto se avanzo
-                                        String identificadorIdentificado = identificadorResult.getValue();  // identificador
-
-                                        // Obtener regex del identificador de conjunto identificado
-                                        String regexDelIdentificadorIdentificado = caracteresRegex.get(identificadorIdentificado);
-
-                                        // Verificar que exista el identificador
-                                        if (regexDelIdentificadorIdentificado != null){
-                                            newRegex += "|" + regexDelIdentificadorIdentificado;
-                                        } else {
-                                            System.err.println("Error: La variable '" + identificadorIdentificado + "' no existe.");
-                                            return false;
-                                        }
-                                        break;
-                                    }
-                            }
-
-                        }
-
-                        break;
-
-                    case '-':
-                        // Buscar que se va a sumar
-                        seEncontroSiguienteParte = false;
-                        while (!seEncontroSiguienteParte){
-                            i++;  // Avanzar en la declaracion del conjunto
-                            letter = futureRegex[i];
-
-                            switch (letter){
-                                case '"':
-                                    seEncontroSiguienteParte = true;
-                                    result = eliminarStringRegex(i, futureRegex, newRegex);
-                                    i = result.getKey();
-                                    newRegex = result.getValue();
-                                    break;
-
-                                case ' ' : break;
-                                case '\t': break;
-
-                                default:
-                                    if (whitespace.contains(String.valueOf(letter))){
-                                        break;
-                                    } else {
-                                        // En caso que se encuentre un identificador para otro conjunto
-                                        seEncontroSiguienteParte = true;
-
-                                        // Identificar el identificador del conjunto que se desea sumar
-                                        Pair<Integer, String> identificadorResult = identifyIdentificator(i, futureRegex);
-                                        i = identificadorResult.getKey();  // Guardar cuanto se avanzo
-                                        String identificadorIdentificado = identificadorResult.getValue();  // identificador encontrado
-
-                                        // Obtener regex de ese otro conjunto
-                                        String regexDelIdentificadorIdentificado = caracteresRegex.get(identificadorIdentificado);
-
-                                        // Verificar que exista
-                                        if (regexDelIdentificadorIdentificado != null){
-                                            regexDelIdentificadorIdentificado = "\"" + regexDelIdentificadorIdentificado + "\"";  // Para que funcione con el mismo metodo
-                                            result = eliminarStringRegex(0, regexDelIdentificadorIdentificado.toCharArray(), newRegex);  // Eliminar del regex
-                                            newRegex = result.getValue();
-                                        } else {
-                                            System.err.println("Error: La variable '" + identificadorIdentificado + "' no existe.");
-                                            return false; // Terminar el metodo
-                                        }
-                                        break;
-                                    }
-                            }
-                        }
-
-                        break;
-
-                    case '.':
-                        // Se debe buscar en el resuto de FutureRegex para ver si se encuentra otro punto
-                        seEncontroSiguienteParte = false;
-                        for (int j = i; j < futureRegex.length - 1; j++) {
-                            i++;  // Avanzar en la declaracion del conjunto
-                            letter = futureRegex[i];
-
-                            switch (letter) {
-                                case '.':
-                                    seEncontroSiguienteParte = true;
-                                    break;
-                            }
-
-                            if (seEncontroSiguienteParte){
-                                Pair<Integer, String> resultNewRegex = extractCharRange(i, futureRegex, newRegex);
-                                if (resultNewRegex != null){
-                                    i = resultNewRegex.getKey();
-                                    newRegex = resultNewRegex.getValue();
-                                } else {
-                                    return false;
-                                }
-
-                                break;  // Terminar for si se encontro otro punto
-                            }
-                        }
-                        break;
-
-                    case ' ' : break;
-                    case '\t': break;
-
-                    case 'C':  // Podría ser un CHR()
-                        // Verificar si existe el resto de declaracion CHR(
-                        int j = i;  // Guardar inicio
-                        j++;
-                        char possible = futureRegex[j];
-
-                        if (possible == 'H'){
-                            j++;
-                            possible = futureRegex[j];
-                            if (possible == 'R'){
-                                j++;
-                                possible = futureRegex[j];
-                                if (possible == '('){
-                                    i = j;  // Actualizar i, porque se encontro un char
-
-                                    boolean seEncontroSegundoParentesis = false;
-                                    while (!seEncontroSegundoParentesis){
-                                        i++;
-                                        possible = futureRegex[i];
-
-                                        if (possible == ')'){
-                                            seEncontroSegundoParentesis = true;
-                                        } else {
-                                            newRegex += possible;
-                                        }
-                                    }
-
-                                    int foundCharValue = Integer.valueOf(newRegex);
-                                    char foundChar = (char)foundCharValue;
-                                    newRegex = String.valueOf(foundChar);
-                                    break;
-                                }
-                            }
-
-                        }
-
-                        // OJO: Se elimino el break, para que entonces baje a la siguiente parte como un ident normal si no es char
-
-                    default:
-                        // Verificar si es una palabra ignorada
-                        if (whitespace.contains(String.valueOf(letter))){
-                            break;
-                        }
-
-                        // Es un ident
-                        else {
-                            // Identificar el identificador del conjunto que se desea sumar
-                            Pair<Integer, String> identificadorResult = identifyIdentificator(i, futureRegex);
-                            i = identificadorResult.getKey();  // Guardar cuanto se avanzo
-                            String identificadorIdentificado = identificadorResult.getValue();  // identificador
-
-                            // Obtener el regex del identificador
-                            String regexDelIdentificadorIdentificado = caracteresRegex.get(identificadorIdentificado);
-
-                            // Verificar que exista
-                            if (regexDelIdentificadorIdentificado != null){
-                                newRegex += regexDelIdentificadorIdentificado;
-                            } else {
-                                System.err.println("Error: La variable '" + identificadorIdentificado + "' no existe.");
-                                return false;
-                            }
-                        }
-                        break;
-                }
+            // Debe mandarse el indice del final de la linea como parametro, no se manda el último caracter porque es un punto
+            result = identifyCharacterRegex(futureRegex, futureRegex.length - 2);
+            if (result != null){
+                newRegex = result.getValue();
+                caracteresRegex.put(identificador, newRegex);
+            } else {
+                System.err.println("Error: Character mal declarado: '" + identificador + "'.");
+                return false;
             }
-
-            caracteresRegex.put(identificador, newRegex);
-
         }
+
 
         // TOKENS regex
         // Por cada lina en bruto
@@ -684,11 +589,194 @@ public class CocolRReader {
             }
         }
 
+        // IGNORE palabras
+        for (String palabra : palabrasIgnoradas) {
+            try {
+                char[] conjuntoIgnorar = palabra.toCharArray();
+                result = identifyCharacterRegex(conjuntoIgnorar, conjuntoIgnorar.length - 2);
+                if (result == null) {
+                    System.err.println("Error: Conjunto de whitespace mal declarado: '" + palabra + "'.");
+                    return false;
+                }
+                String nuevaPalabraIgnorar = result.getValue();
+                whitespace.add(nuevaPalabraIgnorar);
+
+            } catch (IndexOutOfBoundsException e){
+                System.err.println("Error: Conjunto de whitespace mal declarado: '" + palabra + "'.");
+                return false;
+            }
+        }
 
 
         return true;
-
     }
+
+
+    /**
+     * Metodo que tiene como objetivo parsear una linea de declaracion de regex. Para ello, lee la linea de derecha a
+     * izquierda de cada declaracion, esto para que el metodo sea recursivo por la izquierda
+     * @param futureRegex arreglo con la linea que debe parsearse a un regex
+     * @param inicioFutureRegex es el inicio del final de un regex y es el indicador de como se va avanzando en la linea original
+     * @return devuelve el regex de un character y el indice de donde termina (Como va de regreso, es el inicio)
+     */
+    Pair<Integer, String> identifyCharacterRegex(char[] futureRegex, int inicioFutureRegex){
+        String characterRegex = "";
+        Pair<Integer, String> result;
+        String newRegex = "";
+        boolean seEncontroSiguienteParte;
+
+        // Analizar metodo de creacion de conjunto por cada letra identificada en COCOL/R
+        for (int i = inicioFutureRegex; i >= 0; i--) {
+            char letter = futureRegex[i];
+
+            switch (letter){
+                // CHARACTER: Termina con comillas, es un string con conjunto caracteres
+                case '"':
+                    result = getStringRegex(i, futureRegex);
+                    // Actualizar contador de arreglo
+                    i = result.getKey();
+                    // Agregar nuevo conjunto
+                    newRegex = result.getValue();
+                    break;
+
+                case '\'':
+                    // Avanzar al contenido del char
+                    i--;
+
+                    // Obtener el contenido
+                    newRegex = String.valueOf(futureRegex[i]);
+
+                    // Avanzar uno más para consumir la segunda comilla
+                    i--;
+                    break;
+
+                case '+':
+                    // Avanzar en la declaracion del conjunto
+                    i--;
+
+                    // Buscar que es lo que se va a sumar y lo agrega
+                    result = identifyCharacterRegex(futureRegex, i);
+                    newRegex += "|" + result.getValue();
+                    i = result.getKey();
+                    break;
+
+                case '-':
+                    // Avanzar en la declaracion del conjunto
+                    i--;
+
+                    // Guardar lo que se quiere quitar
+                    String notDesiredSet = newRegex;
+
+                    // Buscar a lo que se le restara lo que no se quiere
+                    result = identifyCharacterRegex(futureRegex, i);
+                    if (result == null){
+                        return null;
+                    }
+                    newRegex = result.getValue();
+                    i = result.getKey();
+
+                    // Restar ambos conjuntos
+                    newRegex = eliminarStringRegex(notDesiredSet.toCharArray(), newRegex);
+                    break;
+
+                // Siempre que viene a un punto es por declaracion de un conjunto de chars
+                case '.':
+                    // Siempre tiene que tener otro punto a la par.
+                    i--;
+                    letter = futureRegex[i];
+
+                    if (letter == '.'){
+                        Pair<Integer, String> resultNewRegex = extractCharRange(i, futureRegex, newRegex);
+                        if (resultNewRegex != null){
+                            i = resultNewRegex.getKey();
+                            newRegex = resultNewRegex.getValue();
+                        } else {
+                            System.err.println("Error: No se declaro correctamente un rango de characters.");
+                            return null;
+                        }
+
+                        break;
+
+                    } else {
+                        System.err.println("Error: Para crear un conjunto de chars, deben existir dos puntos consecutivos "
+                                + "\"..\".");
+                        return null;
+                    }
+
+
+                case ' ' : break;
+                case '\t': break;
+
+                case ')':  // Podría ser un CHR()
+                    String charFinal = "";
+                    // Buscar siguiente parentesis
+                    boolean seEncontroSegundoParentesis = false;
+                    char possible;
+                    while (!seEncontroSegundoParentesis){
+                        i--;
+                        possible = futureRegex[i];
+                        if (possible == '('){
+                            seEncontroSegundoParentesis = true;
+                        } else {
+                            charFinal = possible + charFinal;
+                        }
+                    }
+
+                    // Asegurarse que se trata de un CHR
+                    i--;
+                    if (futureRegex[i] == 'R'){
+                        i--;
+                        if (futureRegex[i] == 'H'){
+                            i--;
+                            if (futureRegex[i] == 'C'){
+                                int foundCharValue = Integer.valueOf(charFinal);
+                                char foundChar = (char)foundCharValue;
+                                charFinal = String.valueOf(foundChar);
+                                newRegex = charFinal;
+                                break;
+                            } else {
+                                System.err.println("Error: Para al reconocer un CHR.");
+                                return null;
+                            }
+                        } else {
+                            System.err.println("Error: Para al reconocer un CHR.");
+                            return null;
+                        }
+                    } else {
+                        System.err.println("Error: Para al reconocer un CHR.");
+                        return null;
+                    }
+
+                default:
+                    // Es un ident
+                    // Identificar el identificador del conjunto que se desea sumar
+                    Pair<Integer, String> identificadorResult = identifyIdentificatorInverse(i, futureRegex);
+                    String identificadorIdentificado;
+                    if (identificadorResult != null){
+                        i = identificadorResult.getKey();  // Guardar cuanto se avanzo
+                        identificadorIdentificado = identificadorResult.getValue();  // identificador
+                    } else {
+                        System.err.println("Error: Se encontro una variable que no existe.");
+                        return null;
+                    }
+
+                    // Obtener el regex del identificador
+                    String regexDelIdentificadorIdentificado = caracteresRegex.get(identificadorIdentificado);
+
+                    // Verificar que exista
+                    if (regexDelIdentificadorIdentificado != null){
+                        newRegex += regexDelIdentificadorIdentificado;
+                    } else {
+                        System.err.println("Error: La variable '" + identificadorIdentificado + "' no existe.");
+                        return null;
+                    }
+                    break;
+            }
+        }
+
+        return new Pair<Integer, String>(0, newRegex);
+    }
+
 
     private String identifyTokenRegex(String tokenExpr, String tokenIdent) {
         // Examinar sintax
@@ -696,6 +784,9 @@ public class CocolRReader {
         if (!goodSintax) return null;
 
         goodSintax = verifyPreSyntax(tokenExpr,'{','}');
+        if (!goodSintax) return null;
+
+        goodSintax = verifyPreSyntax(tokenExpr,'(',')');
         if (!goodSintax) return null;
 
         // Analizar cada una de las letras
@@ -757,6 +848,7 @@ public class CocolRReader {
 
                     // Copiar contador
                     p = i;
+                    i++;
 
                     // Encontrar fin de TOKENEXPR
                     while(cantidadLlaves != 0 && p < tokenExpr.length() - 1){
@@ -769,8 +861,12 @@ public class CocolRReader {
                             cantidadLlaves--;
                         }
                     }
-
-                    newRegex += "(" + identifyTokenRegex(tokenExpr.substring(i + 1, p), tokenIdent) + ")*";  // PUEDE DAR OF BY ONEEEEEEEEEEEEEEEEEEEEEEEEEEE
+                    String newRegexPrev = identifyTokenRegex(tokenExpr.substring(i, p), tokenIdent);
+                    if (newRegexPrev == null){
+                        System.err.println("Error: Declaración incorrecta de token dentro de parentesis.");
+                        return null;
+                    }
+                    newRegex += "(" + newRegexPrev + ")*";  // PUEDE DAR OF BY ONEEEEEEEEEEEEEEEEEEEEEEEEEEE
 
                     // Actualizar contador
                     i = p;
@@ -780,6 +876,7 @@ public class CocolRReader {
                 case '[':
                     int cantidadCorchetes=1;
                     p = i;
+                    i++;
                     // Encontrar fin de TOKENEXPR en p
                     while(cantidadCorchetes != 0 && p < tokenExpr.length() - 1){
                         p++;
@@ -792,7 +889,40 @@ public class CocolRReader {
                         }
                     }
 
-                    newRegex += "((" + identifyTokenRegex(tokenExpr.substring(i, p), tokenIdent) + ")?)";
+                    newRegexPrev = identifyTokenRegex(tokenExpr.substring(i, p), tokenIdent);
+                    if (newRegexPrev == null){
+                        System.err.println("Error: Declaración incorrecta de token dentro de parentesis.");
+                        return null;
+                    }
+                    newRegex += "((" + newRegexPrev + ")?)";
+
+                    // Actualizar contador
+                    i = p;
+                    break;
+
+                // TOKEN FACTOR: ()
+                case '(':
+                    int cantidadParentesis = 1;
+                    p = i;
+                    i++;
+                    // Encontrar fin de TOKENEXPR en p
+                    while(cantidadParentesis != 0 && p < tokenExpr.length() - 1){
+                        p++;
+
+                        if(tokenExpr.charAt(p) == '('){
+                            cantidadParentesis++;
+
+                        } else if(tokenExpr.charAt(p) == ')'){
+                            cantidadParentesis--;
+                        }
+                    }
+
+                    newRegexPrev = identifyTokenRegex(tokenExpr.substring(i, p), tokenIdent);
+                    if (newRegexPrev == null){
+                        System.err.println("Error: Declaración incorrecta de token dentro de parentesis.");
+                        return null;
+                    }
+                    newRegex += "(" + newRegexPrev + ")";
 
                     // Actualizar contador
                     i = p;
@@ -860,42 +990,53 @@ public class CocolRReader {
     private Pair<Integer, String> extractCharRange(int i, char[] futureRegex, String newRegex) {
         // Buscar siguiente iniciador de CHAR
         char letter;
+        i--;
         boolean terminarLoop = false;
         String charFinal = "";
-        for (int j = i; j < futureRegex.length; j++) {
-            i++;  // Avanzar en la declaracion del conjunto
+        for (int j = i; j >= 0; j--) {
             letter = futureRegex[i];
 
             switch (letter) {
-                case 'C':  // Podría ser un CHR()
-                    i = i + 3;  // Avanzar tres, que estamos seguros que corresponden a las letras HR(
+                case ')':  // Podría ser un CHR()
+                    // Buscar siguiente parentesis
                     boolean seEncontroSegundoParentesis = false;
                     char possible;
                     while (!seEncontroSegundoParentesis){
-                        i = i + 1;
+                        i = i - 1;
                         possible = futureRegex[i];
-                        if (possible == ')'){
+                        if (possible == '('){
                             seEncontroSegundoParentesis = true;
                         } else {
-                            charFinal += possible;
+                            charFinal = possible + charFinal;
                         }
                     }
 
-                    int foundCharValue = Integer.valueOf(charFinal);
-                    char foundChar = (char)foundCharValue;
-                    charFinal = String.valueOf(foundChar);
-                    terminarLoop = true;
-                    break;
+                    // Asegurarse que se trata de un CHR
+                    i--;
+                    if (futureRegex[i] == 'R'){
+                        i--;
+                        if (futureRegex[i] == 'H'){
+                            i--;
+                            if (futureRegex[i] == 'C'){
+                                int foundCharValue = Integer.valueOf(charFinal);
+                                char foundChar = (char)foundCharValue;
+                                charFinal = String.valueOf(foundChar);
+                                terminarLoop = true;
+                                break;
+                            } else return null;
+                        } else return null;
+                    } else return null;
+
 
                 case '\'':
                     // Avanzar al contenido del char
-                    i++;
+                    i--;
 
                     // Obtener el contenido
                     charFinal = String.valueOf(futureRegex[i]);
 
                     // Avanzar uno más para consumir la segunda comilla
-                    i++;
+                    i--;
                     terminarLoop = true;
                     break;
             }
@@ -903,53 +1044,41 @@ public class CocolRReader {
             if (terminarLoop){
                 break;
             }
+            i--;  // Avanzar en la declaracion del conjunto
         }
 
         // Obtener todos los characters entre ambos characters
-        int charInicio = newRegex.charAt(0);
-        int charEnd = charFinal.charAt(0);
+        int charEnd = newRegex.charAt(0);
+        int charInicio = charFinal.charAt(0);
 
         if (charInicio < charEnd){
             // Reiniciar newRegex
-            newRegex = "";
+            newRegex = "" + (char)charInicio;
             // Agregar cada caracter a nuevo regex
-            for (int k = charInicio; k <= charEnd; k++){
-                newRegex += (char)k;
+            for (int k = charInicio + 1; k <= charEnd; k++){
+                newRegex += "|" + (char)k;
             }
         } else {
             System.err.println("Error: El rango de chars que se desea crear es invalido.");
             return null;
         }
-
         return new Pair<Integer, String>(i, newRegex);
 
     }
 
     /**
      * Metodo que sirve para eliminar un conjunto de caracteres de un conjunto de regex nuevo
-     * @param i es el index del arreglo, donde inicia el string en el arreglo
-     * @param toEliminate es el arreglo de chars en el que se encuentra el conjunto en bruto a eliminar
-     * @param newRegex es el regex que se está generando
+     * @param toEliminate es el arreglo de chars en el que se encuentra el conjunto a eliminar
+     * @param newRegex es el regex del que se eliminaran los caracteres
      * @return devuelve el nuevo indice para el for y el nuevo regex
      */
-    private Pair<Integer,String> eliminarStringRegex(int i, char[] toEliminate, String newRegex) {
+    private String eliminarStringRegex(char[] toEliminate, String newRegex) {
         String result = "";
         HashSet<Character> conjuntoAEliminar = new HashSet<Character>();
 
         // Agregar a conjunto de palabras a eliminar
-        int contadorQuotes = 0;
-        while (true) {
-            char letra = toEliminate[i];
-            if (letra != '"'){
-                conjuntoAEliminar.add(letra);
-            } else {
-                contadorQuotes++;
-                // Si se termina de leer el string, entonces terminar for.
-                if (contadorQuotes >= 2){
-                    break;
-                }
-            }
-            i++;  // Aumentar contador
+        for (char aToEliminate : toEliminate) {
+            conjuntoAEliminar.add(aToEliminate);
         }
 
         char[] newRegexChar = newRegex.toCharArray();  // Convertir el nuevo regexanterior a arreglo
@@ -959,14 +1088,14 @@ public class CocolRReader {
             boolean seDebeIgnorar = conjuntoAEliminar.contains(letraActual);  // Ver si se debe ignorar
             if (!seDebeIgnorar){
                 if (letraActual != '|'){
-                    result += letraActual + "|";  // Copiar a nuvo resultado
+                    result += letraActual + "|";  // Copiar a nuevo resultado
                 }
             }
         }
 
         result = result.substring(0, result.length() - 1);  // eliminar el ultimo OR que se coloco
 
-        return new Pair<Integer, String>(i, result);
+        return result;
     }
 
 
@@ -985,15 +1114,13 @@ public class CocolRReader {
             if (i > futureRegex.length - 1) break;
 
             char newLetter = futureRegex[i];
-            if (newLetter != ' '){
-                preNewIdentificator += newLetter;  // Agregar nueva letra al posible identificador
-                isIdent = simulator.simulateNFA(identAutomata, preNewIdentificator, idenNFAToDFA);  // Verificar si es identificadord
+            preNewIdentificator += newLetter;  // Agregar nueva letra al posible identificador
+            isIdent = simulator.simulateNFA(identAutomata, preNewIdentificator, idenNFAToDFA);  // Verificar si es identificadord
 
-                if (isIdent){
-                    newIdentificator = preNewIdentificator;
-                } else {
-                    found = true;
-                }
+            if (isIdent){
+                newIdentificator = preNewIdentificator;
+            } else {
+                found = true;
             }
             if (!found) i++;  // Aumentar contador
         }
@@ -1002,29 +1129,89 @@ public class CocolRReader {
         else return null;
     }
 
+
+    /**
+     * Metodo que sirve para identificar un identificador, pero desde su final
+     * @param i el indice del for principal, donde inicia el identificador en el arreglo
+     * @param futureRegex es el arreglo de chars que contiene el regex en bruto
+     * @return devuelve el identificador encontrado
+     */
+    private Pair<Integer,String> identifyIdentificatorInverse(int i, char[] futureRegex) {
+        String newIdentificator = "";  // Resultado final
+        String preNewIdentificator = "";  // String de prueba
+        boolean found = false;
+        boolean foundAtLeastOne = false;
+        boolean isIdent;  // Para verificar si son identificadores
+        while (!foundAtLeastOne){
+            if (i < 0) break;
+
+            char newLetter = futureRegex[i];
+            preNewIdentificator = newLetter + preNewIdentificator;  // Agregar nueva letra al posible identificador al inicio
+            isIdent = simulator.simulateNFA(identAutomata, preNewIdentificator, idenNFAToDFA);  // Verificar si es identificadord
+
+            if (isIdent){
+                foundAtLeastOne = true;
+            }
+
+            if (!foundAtLeastOne) i--;  // Disminuir contador
+
+        }
+
+        if (foundAtLeastOne){
+            i--;
+            while(!found){
+                if (i < 0) break;
+
+                char newLetter = futureRegex[i];
+                preNewIdentificator = newLetter + preNewIdentificator;  // Agregar nueva letra al posible identificador
+                isIdent = simulator.simulateNFA(identAutomata, preNewIdentificator, idenNFAToDFA);  // Verificar si es identificador
+
+                if (isIdent){
+                    newIdentificator = preNewIdentificator;
+                } else {
+                    found = true;
+                }
+                if (!found) i--;  // Disminuir contador
+            }
+        }
+
+        i++;  // Aumentar en uno el contador por preview
+        if (simulator.simulateNFA(identAutomata, newIdentificator, idenNFAToDFA)) return new Pair<Integer, String>(i, newIdentificator);
+        else return null;
+    }
+
     /**
      * Metodo que sirve para agregar un conjunto de caracteres a un nuevo regex con ORs
-     * @param i es el index del for prinipal, donde inicia el string en el arreglo
+     * @param i es el index del for prinipal, donde termina el string en el arreglo, debe devolver donde inicia
      * @param futureRegex es el arreglo de chars en el que se encuentra el conjunto en bruto
-     * @param newRegex es el regex que se está generando
      * @return devuelve el nuevo indice para el for y el nuevo regex
      */
-    public Pair<Integer, String> agregarStringRegex(int i, char[] futureRegex, String newRegex){
-        i++;  // Avanzar en la declaracion del conjunto
+    public Pair<Integer, String> getStringRegex(int i, char[] futureRegex){
+        // Avanzar en el retroceso de la declaracion del conjunto
+        i--;
+
+        // Variable de resultado
+        String newRegex = "";
+
+        // Obtener anterior letra
         char letter = futureRegex[i];
 
         // Buscar las siguientes comillas e ir creando regex
         while (letter != '"'){
-            newRegex += String.valueOf(letter);  // Agregar el primer caracter
+            newRegex += letter;  // Agregar el primer caracter
 
             // Verificar que no es el ultimo caracter
-            char nextLetter = futureRegex[i + 1];
+            char nextLetter = futureRegex[i - 1];
             if(nextLetter != '"'){
-                newRegex += "|";  // Agregar OR entre cada letra
+                // Agregar OR entre cada letra
+                newRegex += "|";
             }
 
-            i++;  // Avanzar en la declaracion del conjunto
-            letter = nextLetter;  // Obtener siguiente letra
+            // Avanzar el retroceso de la declaracion del conjunto
+            i--;
+
+            // Obtener siguiente letra
+            letter = nextLetter;
         }
 
         return new Pair<Integer, String>(i, newRegex);
@@ -1044,10 +1231,9 @@ public class CocolRReader {
 
 
     /**
-     * Metodo para leer el archivo Cocol/R obtenido de una pagina.
+     * Metodo para leer el archivo Cocol/R, este divide el documento en lineas enteras de instrucciones que terminen en punto.
      * @param filename nombre a de archivo a abrir
      * @return Lista con strings de cada linea del documento
-     * @link https://alvinalexander.com/blog/post/java/how-open-read-file-java-string-array-list
      */
     public static List<String> readFile(String filename)
     {
@@ -1056,9 +1242,15 @@ public class CocolRReader {
         {
             BufferedReader reader = new BufferedReader(new FileReader(filename));
             String line;
+            String partLine;
             while ((line = reader.readLine()) != null)
             {
-                records.add(line);
+                // Eliminar espacios en blanco a los lados
+                partLine = line.trim();
+                if (partLine.contains("/*") || partLine.contains("//")){
+                    partLine = deleteComments(partLine);
+                }
+                records.add(partLine.trim());
             }
             reader.close();
             return records;
@@ -1068,6 +1260,77 @@ public class CocolRReader {
             System.err.print("No existe el archivo '" +  filename + "'\n");
             return null;
         }
+    }
+
+    /**
+     * Metodo que analiza una linea y elimina cualquier comentario que pueda estar dentro de él.
+     * @param partLine la linea que podría tener un comentario
+     * @return lineas sin comentarios
+     */
+    private static String deleteComments(String partLine) {
+        int commentStart, commentEnd;
+        int comillasStart, comillasEnd;
+        boolean noDentroDeTexto = false;
+        String toEliminate;
+        if (partLine.contains("//")){
+            commentStart = partLine.indexOf("//");
+            commentEnd = partLine.length();
+            // Verificar si hay comillas
+            if (partLine.contains("\"")){
+                comillasStart = partLine.indexOf("\"");
+
+                // Verificar si hay segundas comillas
+                comillasEnd = partLine.indexOf("\"", comillasStart + 1);
+                if (comillasEnd > -1){
+                    if ((commentStart < comillasStart) && (comillasEnd < commentEnd)){
+                        // Elimina pedazo de comentario
+                        partLine = partLine.substring(0, commentStart);
+                    }
+                } else {
+                    // Elimina pedazo de comentario
+                    partLine = partLine.substring(0, commentStart);
+                }
+            } else {
+                // Elimina pedazo de comentario
+                partLine = partLine.substring(0, commentStart);
+            }
+        }
+
+
+        if (partLine.contains("/*")){
+            commentStart = partLine.indexOf("/*");
+            if (partLine.contains("*/")){
+                commentEnd = partLine.indexOf("*/") + 2;
+            } else {
+                commentEnd = partLine.length();
+            }
+
+            // Verificar que no este dentro de comillas
+            if (partLine.contains("\"")){
+                comillasStart = partLine.indexOf("\"");
+
+                // Verificar si hay segundas comillas
+                comillasEnd = partLine.indexOf("\"", comillasStart + 1);
+                if (comillasEnd > -1){
+                    if ((commentStart < comillasStart) && (comillasEnd < commentEnd)){
+                        // Elimina pedazo de comentario
+                        toEliminate = partLine.substring(commentStart, commentEnd);
+                        partLine = partLine.replaceAll(toEliminate, "");
+                    }
+
+                } else {
+                    // Elimina pedazo de comentario
+                    toEliminate = partLine.substring(commentStart, commentEnd);
+                    partLine = partLine.replaceAll(toEliminate, "");
+                }
+            } else {
+                // Elimina pedazo de comentario
+                toEliminate = partLine.substring(commentStart, commentEnd);
+                partLine = partLine.replace(toEliminate, "");
+            }
+        }
+
+        return partLine;
     }
 
     public void generateLexerJavaFile(){
@@ -1124,16 +1387,18 @@ public class CocolRReader {
         }
 
         // 3) Whitespace
-        programa += "        tokensTypesAndRegexs.add(new Pair<String, String>(\"whitespace\", \"";
-        for (int i = 0; i < whitespace.size(); i++) {
-            String palabra = whitespace.get(i);
-            if (i < whitespace.size() - 1){
-                programa += "(" + palabra + ")|";
-            } else {
-                programa += "(" + palabra + ")";
+        if (whitespace.size() > 0){
+            programa += "        tokensTypesAndRegexs.add(new Pair<String, String>(\"whitespace\", \"";
+            for (int i = 0; i < whitespace.size(); i++) {
+                String palabra = whitespace.get(i);
+                if (i < whitespace.size() - 1){
+                    programa += "(" + palabra + ")|";
+                } else {
+                    programa += "(" + palabra + ")";
+                }
             }
+            programa += "\"));\n";
         }
-        programa += "\"));\n";
 
 
         // Agregar precedencia a regex
