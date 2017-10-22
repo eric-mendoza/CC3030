@@ -1,7 +1,6 @@
 package GeneradorLexers;
 
 import javafx.util.Pair;
-
 import java.io.*;
 import java.util.*;
 
@@ -14,10 +13,15 @@ import java.util.*;
 public class CocolRReader {
     public CocolRReader(){
         idenNFAToDFA.generateSimpleEClosure(identAutomata);
+        simulator = new Simulator();
+        grammar = new Grammar();
     }
 
     // Simulador para automatas
-    private Simulator simulator = new Simulator();
+    private Simulator simulator;
+
+    // Gramatica
+    private Grammar grammar;
 
     /**
      * Algunos regex importantes
@@ -37,8 +41,10 @@ public class CocolRReader {
 
     private ArrayList<String> tokensEnBruto = new ArrayList<String>();  // Guarda las lineas que contienen tokens
 
-    private ArrayList<String> palabrasIgnoradas = new ArrayList<String>();  // Se va a guardar solo los caracteres a ignorar en bruto
+    private ArrayList<String> whitespaceEnBruto = new ArrayList<String>();  // Se va a guardar solo los caracteres a ignorar en bruto
     private ArrayList<String> whitespace = new ArrayList<String>();  // Cadenas de caracteres que no se toman en cuenta
+
+    private ArrayList<String> productionsEnBruto = new ArrayList<String>();  // Guarda las lineas que contienen producciones
 
 
     /**
@@ -47,6 +53,7 @@ public class CocolRReader {
     private HashMap<String, String> caracteresRegex = new HashMap<String, String>();
     private HashMap<String, String> palabrasReservadasRegex = new HashMap<String, String>();  // Se va a guardar <iden, keyword>
     private HashMap<String, String> tokensRegex = new HashMap<String, String>();  // <tokenIden, tokenRegex>
+    private HashMap<String, ArrayList<String>> productions = new HashMap<String, ArrayList<String>>();  // <head, body>
 
 
 
@@ -57,9 +64,6 @@ public class CocolRReader {
      * @return True, si la sintax es correcta; False, si existen errores
      */
     public boolean analizeCocolRSyntax(String filename){
-        /**
-         * Crear los automatas declarados en Cocol/R
-         */
         // Regex mas basicos
         String ANY = "(\u0001)|(\u0002)|(\u0003)|(\u0004)|(\u0005)|(\u0006)|(\u0007)" +
                 "|\u000E|\u000F|\u0010|\u0011|\u0012|\u0013|\u0014|\u0015|\u0016|\u0017|\u0018|\u0019|\u001A|\u001B|\u001C|\u001D|\u001E|\u001F|( )|(\\!)|\"|#|$|%|&|'|(\\()|(\\))|(\\*)|(\\+)|,|-|(\\.)|/|0|1|2|3|4|5|6|7|8|9|:|;|<|=|>|(\\?)|@|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|[|(\\\\)|]|^|_|`|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|{|(\\|)|}|~" +
@@ -68,43 +72,8 @@ public class CocolRReader {
         caracteresRegex.put("ANY", ANY);
 
         String anyButQuoteRegex = digitRegex + "|(\\.)|#|$|%|&|/|(\\\")|=|¡|\'|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;   // El esparcio podria fallar
-        String anyButApostropheRegex = digitRegex + "|(\\.)|#|$|%|&|/|=|¡|(\\\')|\"|¿|´|¨|~|{|[|^|}|]|`|-|_|:|,|;|<|>|°|¬|(\\+)|(\\?)|(\\!)|(\\|)| |(\\\\)|" + letterRegex;
 
-        // Vocabulary
-        String numberRegex = "(" + digitRegex + ")(" + digitRegex + ")*";
-        String stringRegex = "\"(" + anyButQuoteRegex + ")*\"";
-        String charRegexBasic = "'(" + anyButApostropheRegex + ")'";
-
-        // CHARACTERS regexs
-        String charRegex = "((" + charRegexBasic + ")|( *CHR *\\( *" + numberRegex  + " *\\) *))";
-        String basicSetRegex = "(" + stringRegex + ")|(" + identRegex + ")|(" + charRegex + "( *\\.\\. *" + charRegex + " *)?)|( *ANY *)";
-        String setRegex = "(" + basicSetRegex + ")( *(\\+|-) *(" +  basicSetRegex + "))*";
-        String setDeclRegex = " *(" + identRegex + ") *= *" + "(" + setRegex + ") *\\. *";
-
-        // KEYWORDS regex
-        String keywordDeclRegex = "(" + identRegex + ") *= *(" + stringRegex +") *\\.";
-
-        // WhiteSpace
-        String whiteSpaceDecl = " *IGNORE *(" + setRegex + ") *\\. *";
-
-        /**
-         * Crear los automatas para verificar cada seccion
-         */
-        // Sintax de secciones
-        DirectedGraph keywordDeclAutomata = createAutomaton(keywordDeclRegex);
-        DirectedGraph setsDeclAutomata = createAutomaton(setDeclRegex);
-        DirectedGraph whitespaceDeclarationAutomata = createAutomaton(whiteSpaceDecl);
-        /* No se incluye sintax de tokens por complejidad */
-
-        // Crear e-closure de cada automata
-        NFAToDFA keywordDeclAutomataEClosure = new NFAToDFA();
-        keywordDeclAutomataEClosure.generateSimpleEClosure(keywordDeclAutomata);
-        NFAToDFA setsDeclAutomataEClosure = new NFAToDFA();
-        setsDeclAutomataEClosure.generateSimpleEClosure(setsDeclAutomata);
-        NFAToDFA whitespaceDeclarationAutomataEClosure = new NFAToDFA();
-        whitespaceDeclarationAutomataEClosure.generateSimpleEClosure(whitespaceDeclarationAutomata);
-
-        /**
+        /*
          Crear variables para la creacion de automatas de verificacion de sintax
          */
         List<String> documento = readFile(filename);
@@ -112,412 +81,510 @@ public class CocolRReader {
             return false;
         }
 
-        boolean inicio = false;
-        boolean characters = false;
-        int inicioCharacters = 0;
-        boolean charactersCorrectly;
-        int inicioKeywords = 0;
-        boolean keywords = false;
-        boolean keywordsCorrectly;
-        int inicioTokens = 0;
-        boolean tokens = false;
-        boolean whitespace = false;
-        boolean whitespaceCorrectly;
-        int inicioWhiteSpace = 0;
+        boolean beginExists = false;
+        boolean charactersExist = false;
+        boolean keywordsExists = false;
+        boolean tokensExists = false;
+        boolean whitespaceExists = false;
+        boolean productionsExists = false;
         boolean existenErrores = false;
         ArrayList<String> errores = new ArrayList<String>();
         String identInicio = "", identFinal = "";
         boolean identIguales = false;
-        boolean end = false;
+        boolean endExists = false;
 
 
-        int lineaInicio = 0;
-        int lineaFinal = 0;
-        if (documento != null) {
-            // Encontrar inicio
-            for (int i = 0; i < documento.size(); i++) {
-                inicio = documento.get(i).contains("COMPILER");  // Devuelve True cuando encuentra COMPILER
-                if (inicio){
-                    lineaInicio = i;  // Guarda posicion inicio
-                    lexerJavaFileName = documento.get(i).split(" ")[1];  // Guardar nombre para futuro lexer
-                    identInicio = documento.get(i).split(" ")[1] + ".";  // Guarda identificador de inicio. Se le agrego un punto para coincidir con el del final
-                    break;
-                }
+
+        int posicionLinea = 0;
+        int posicionLineaBackup;
+        String lineaTemp;
+        // Encontrar inicio
+        for (posicionLinea = posicionLinea; posicionLinea < documento.size(); posicionLinea++) {
+            lineaTemp = documento.get(posicionLinea);
+            beginExists = lineaTemp.contains("COMPILER ");  // Devuelve True cuando encuentra COMPILER
+            if (beginExists){
+                lexerJavaFileName = lineaTemp.split(" ")[1].trim();  // Guardar nombre para futuro lexer
+                identInicio = lexerJavaFileName + ".";  // Guarda identificador de inicio. Se le agrego un punto para coincidir con el del final
+                break;
             }
+        }
 
-            // Encontrar posicion CHARACTERS declaration
-            for (int i = lineaInicio + 1; i < documento.size(); i++) {
-                characters = documento.get(i).contains("CHARACTERS"); // Devuelve True cuando encuentra CHARACTERS
-                if (characters) {
-                    inicioCharacters = i;
-                    break;
-                }
+            /*
+            CHARACTERS
+             */
+        // Encontrar posicion CHARACTERS declaration
+        posicionLineaBackup = posicionLinea;
+        for (posicionLinea = posicionLinea + 1; posicionLinea < documento.size(); posicionLinea++) {
+            lineaTemp = documento.get(posicionLinea);
+            charactersExist = lineaTemp.contains("CHARACTERS"); // Devuelve True cuando encuentra CHARACTERS
+            if (charactersExist) {
+                break;
             }
+        }
 
-            // Encontrar Keywords Declaration
-            int inicioBusquedaKeywords;
+        // CHARACTERS: Verificar que se hayan ingresado correctamente los characters
+        if (charactersExist){  // Si se encontro esta seccion...
+            System.out.println("Cargando characters...");
 
-            if (characters){  // Ahorrarse un par de lineas de busqueda viendo si existe CHARACTERS
-                inicioBusquedaKeywords = inicioCharacters + 1;
-            } else {
-                inicioBusquedaKeywords = lineaInicio + 1;
-            }
-
-            for (int i = inicioBusquedaKeywords; i < documento.size(); i++) {
-                keywords = documento.get(i).contains("KEYWORDS");  // Devuelve True si encuentra KEYWORDS
-                if (keywords) {
-                    inicioKeywords = i;
-                    break;
-                }
-            }
-
-            // Encontrar Token declaration
-            int inicioBusquedaTokens;
-
-            if (keywords){
-                inicioBusquedaTokens = inicioKeywords + 1;
-            } else if (characters) {
-                inicioBusquedaTokens = inicioCharacters + 1;
-            } else {
-                inicioBusquedaTokens = lineaInicio + 1;
-            }
-
-            for (int i = inicioBusquedaTokens; i < documento.size(); i++) {
-                tokens = documento.get(i).contains("TOKENS");
-                if (tokens){
-                    inicioTokens = i;
-                    break;
-                }
-            }
+            // Analizar cada linea
+            char ultimoChar;
+            StringBuilder subLinea;
+            boolean dotFound = false, finished = false;
+            int copiaPosicionLinea;
+            while (true) {
+                // Cargar siguiente linea
+                posicionLinea++;
+                lineaTemp = documento.get(posicionLinea);
+                subLinea = new StringBuilder(lineaTemp);
+                copiaPosicionLinea = posicionLinea;  // Para identificar errores en inicio de linea
 
 
-            // Encontrar WhiteSpace declaration
-            int inicioBusquedaWhiteSpace;
+                // Verificar si se debe terminar
+                finished = ((posicionLinea >= documento.size()) || lineaTemp.contains("KEYWORDS") || lineaTemp.contains("TOKENS")
+                        || lineaTemp.contains("IGNORE") || lineaTemp.contains("END")  || lineaTemp.contains("PRODUCTIONS"));
 
-            if (tokens){
-                inicioBusquedaWhiteSpace = inicioTokens + 1;
-            } else if (keywords){
-                inicioBusquedaWhiteSpace = inicioKeywords + 1;
-            } else if (characters) {
-                inicioBusquedaWhiteSpace = inicioCharacters + 1;
-            } else {
-                inicioBusquedaWhiteSpace = lineaInicio + 1;
-            }
+                if (finished) break;
 
-            for (int i = inicioBusquedaWhiteSpace; i < documento.size(); i++) {
-                whitespace = documento.get(i).contains("IGNORE");  // Si encuentra IGNORE indica donde esta
-                if (whitespace){
-                    inicioWhiteSpace = i;
-                    break;
-                }
-            }
-
-            // Encontrar END declaration
-            int inicioBusquedaFinal;
-            if (whitespace){
-                inicioBusquedaFinal = inicioWhiteSpace + 1;
-            } else if (tokens) {
-                inicioBusquedaFinal = inicioTokens + 1;
-            } else if (keywords){
-                inicioBusquedaFinal = inicioKeywords + 1;
-            } else if (characters){
-                inicioBusquedaFinal = inicioCharacters + 1;
-            } else {
-                inicioBusquedaFinal = lineaInicio + 1;
-            }
-
-            for (int i = inicioBusquedaFinal; i < documento.size(); i++) {
-                end = documento.get(i).contains("END");
-                if (end) {
-                    lineaFinal = i;
-                    identFinal = documento.get(i).split(" ")[1];  // Guarda identificador de final
-                    break;
-                }
-            }
-
-
-            // CHARACTERS: Verificar que se hayan ingresado correctamente los characters
-            if (characters){  // Si se encontro esta seccion...
-                System.out.println("Cargando characters...");
-                String linea;
-
-                // Establecer final de loop
-                int finBusquedaCharacters;
-                if (keywords){
-                    finBusquedaCharacters = inicioKeywords;
-                }
-                else if (tokens){
-                    finBusquedaCharacters = inicioTokens;
-                }
-                else if (whitespace){
-                    finBusquedaCharacters = inicioWhiteSpace;
-                }
-                else {
-                    finBusquedaCharacters = lineaFinal;
-                }
-
-                // Analizar cada linea
-                char ultimoChar;
-                String subLinea;
-                boolean dotFound = false;
-                for (int i = inicioCharacters + 1; i < finBusquedaCharacters; i++) {
-                    linea = documento.get(i);
-                    subLinea = linea;
-
-                    // No tomar en cuenta lineas vacías
-                    if (!linea.equals("")){
-                        // Buscar punto del final
-                        while (!dotFound && i < finBusquedaCharacters){
-                            ultimoChar = subLinea.charAt(subLinea.length() - 1);
-                            if (ultimoChar == '.'){
-                                dotFound = true;
-                            } else {
-                                // Si no se ha encontrado, hay que concatenar con la linea de abajo
-                                i++;
-                                subLinea += documento.get(i);
-                            }
-                        }
-
-                        // Verificar si se encontro
-                        if (dotFound){
-                            // Intercambiar variables, porque sí
-                            linea = subLinea;
-                            dotFound = false;
+                // No tomar en cuenta lineas vacías
+                if (!lineaTemp.equals("")){
+                    // Buscar punto del final
+                    while (!dotFound && !finished){
+                        ultimoChar = subLinea.charAt(subLinea.length() - 1);
+                        if (ultimoChar == '.'){
+                            dotFound = true;
                         } else {
-                            errores.add("Error al declarar un character: Hace falta un punto final. Linea: " + String.valueOf(i + 1));
-                            existenErrores = true;
-                            break;
+                            // Si no se ha encontrado, hay que concatenar con la linea de abajo
+                            posicionLinea++;
+                            String nextLine = documento.get(posicionLinea);
+                            subLinea.append(nextLine);
+                            finished = ((posicionLinea >= documento.size()) || nextLine.contains("KEYWORDS") || nextLine.contains("TOKENS")
+                                    || nextLine.contains("IGNORE") || nextLine.contains("END")  || nextLine.contains("PRODUCTIONS"));
                         }
+                    }
 
-                        // Verificar sintax
-                        charactersCorrectly = linea.contains("=");  // Verificar que la linea este bien escrita
+                    // Verificar si se encontro
+                    if (dotFound){
+                        // Convertir la linea en la concatenacion de las lineas anteriores
+                        lineaTemp = subLinea.toString();
+                        dotFound = false;
+                    } else {
+                        errores.add("Error al declarar un character: Hace falta un punto final. Linea: " + String.valueOf(copiaPosicionLinea + 1));
+                        existenErrores = true;
+                        break;
+                    }
 
-
-                        // Si se encuentra una linea correcta
-                        if (charactersCorrectly) {
-                            String[] lineSections = linea.split("=");
-                            Pair<Integer, String> identificatorCharacterPair = identifyIdentificator(0, lineSections[0].toCharArray());
+                    // Verificar que exista signo de igual
+                    if (lineaTemp.contains("=")) {
+                        String[] lineSections = lineaTemp.split("=");
+                        Pair<Integer, String> identificatorCharacterPair = identifyIdentificator(0, lineSections[0].toCharArray());
+                        if (identificatorCharacterPair != null){
                             caracteresKeysOrdered.add(identificatorCharacterPair.getValue());
                             caracteres.put(identificatorCharacterPair.getValue(), lineSections[1]);  // Guardar ident y conjunto
-
                         } else {
-                            errores.add("Error al declarar un character. Linea: " + String.valueOf(i + 1));
+                            errores.add("Error al declarar un character. Se utilizo un identificador invalido '" + lineSections[0].trim() + "'. Linea: " + String.valueOf(posicionLinea + 1));
                             existenErrores = true;
                             break;
                         }
+
+                    } else {
+                        errores.add("Error al declarar un character. Linea: " + String.valueOf(posicionLinea + 1));
+                        existenErrores = true;
+                        break;
                     }
                 }
             }
+        } else {
+            posicionLinea = posicionLineaBackup;
+        }
 
 
-            // KEYQORDS: Verificar que se hayan ingresado correctamente los keywords
-            if (keywords){  // Si existe esta seccion
-                String linea;
-                System.out.println("Cargando keywords...");
 
-                // establecer final de loop
-                int finBusquedaKeywords;
-                if (tokens){
-                    finBusquedaKeywords = inicioTokens;
+            /*
+            KEYWORDS
+             */
+        // Encontrar Keywords Declaration
+        posicionLineaBackup = posicionLinea;
+        for (; posicionLinea < documento.size(); posicionLinea++) {
+            lineaTemp = documento.get(posicionLinea);
+            keywordsExists = lineaTemp.contains("KEYWORDS");  // Devuelve True si encuentra KEYWORDS
+            if (keywordsExists) {
+                break;
+            }
+        }
+
+        // KEYWORDS: Verificar que se hayan ingresado correctamente los keywords
+        if (keywordsExists){  // Si existe esta seccion
+            System.out.println("Cargando keywords...");
+
+            char ultimoChar;
+            StringBuilder subLinea;
+            boolean dotFound = false, finished;
+            int copiaPosicionLinea;
+            while (true) {
+                // Cargar siguiente linea
+                posicionLinea++;
+                lineaTemp = documento.get(posicionLinea);
+                subLinea = new StringBuilder(lineaTemp);
+
+                // Verificar si se debe terminar
+                finished = ((posicionLinea >= documento.size()) || lineaTemp.contains("TOKENS")
+                        || lineaTemp.contains("IGNORE") || lineaTemp.contains("END") || lineaTemp.contains("PRODUCTIONS"));
+
+                if (finished) break;
+
+                // Si es una linea buena
+                if (!lineaTemp.equals("")){
+                    // Buscar punto del final
+                    copiaPosicionLinea = posicionLinea;  // Para identificar errores en inicio de linea
+                    while (!finished && !dotFound){
+                        ultimoChar = subLinea.charAt(subLinea.length() - 1);
+                        if (ultimoChar == '.'){
+                            dotFound = true;
+                        } else {
+                            // Si no se ha encontrado, hay que concatenar con la linea de abajo
+                            posicionLinea++;
+                            String nextLine = documento.get(posicionLinea);
+                            subLinea.append(nextLine);
+                            finished = ((posicionLinea >= documento.size()) || nextLine.contains("TOKENS")
+                                    || nextLine.contains("IGNORE") || nextLine.contains("END")  || nextLine.contains("PRODUCTIONS"));
+                        }
+                    }
+
+                    // Verificar si se encontro
+                    if (dotFound){
+                        // Convertir la linea concatenada en la linea a analizar
+                        lineaTemp = subLinea.toString();
+                        dotFound = false;
+                    } else {
+                        errores.add("Error al declarar un keyword: Hace falta un punto final. Linea: " + String.valueOf(copiaPosicionLinea + 1));
+                        existenErrores = true;
+                        break;
+                    }
+
+                    // Si se encuentra una linea correcta
+                    if (lineaTemp.contains("=")) {
+                        String[] seccionesLinea = lineaTemp.split("=");
+                        // Verificar si se utilizo un identificador valido
+                        Pair<Integer, String> identificatorKeywordPair = identifyIdentificator(0, seccionesLinea[0].toCharArray());
+
+                        if (identificatorKeywordPair == null) {
+                            errores.add("Error al declarar un keyword. Se utilizó un identificador invalido '" + seccionesLinea[0].trim() + "'. Linea: " + String.valueOf(posicionLinea + 1));
+                            existenErrores = true;
+                            break;
+                        }
+
+                        // Obtener el valor de la palabra reservada
+                        String newRegex = seccionesLinea[1];
+                        int inicioNewRegex = newRegex.indexOf("\"") + 1;
+                        int endNewRegex = newRegex.lastIndexOf("\"");
+
+                        if (inicioNewRegex == (endNewRegex + 1)) {
+                            errores.add("Error al declarar el keyword '" + identificatorKeywordPair.getValue() + "', " +
+                                    "faltan unas comillas. Linea: " + String.valueOf(posicionLinea + 1));
+                            existenErrores = true;
+                            break;
+                        }
+
+                        newRegex = newRegex.substring(inicioNewRegex, endNewRegex);
+
+                        palabrasReservadasRegex.put(identificatorKeywordPair.getValue(), newRegex);
+
+                    } else {
+                        errores.add("Error al declarar un keyword. Linea: " + String.valueOf(posicionLinea + 1));
+                        existenErrores = true;
+                        break;
+                    }
+
                 }
-                else if (whitespace){
-                    finBusquedaKeywords = inicioWhiteSpace;
-                }
-                else {
-                    finBusquedaKeywords = lineaFinal;
-                }
+            }
+        } else {
+            posicionLinea = posicionLineaBackup;
+        }
 
-                char ultimoChar;
-                String subLinea;
-                boolean dotFound = false;
-                for (int i = inicioKeywords + 1; i < finBusquedaKeywords; i++) {
-                    linea = documento.get(i);
-                    subLinea = linea;
-                    if (!linea.equals("")){
-                        // Buscar punto del final
-                        while ((i < finBusquedaKeywords) && !dotFound){
+
+            /*
+            TOKEN
+             */
+        // Encontrar Token declaration
+        posicionLineaBackup = posicionLinea;
+        for (; posicionLinea < documento.size(); posicionLinea++) {
+            tokensExists = documento.get(posicionLinea).contains("TOKENS");
+            if (tokensExists){
+                break;
+            }
+        }
+
+        // TOKENS: Guardar las lineas que contienen tokens
+        if (tokensExists){
+            System.out.println("Cargando tokens...");
+
+
+            // Obtener las lineas con tokens
+            char ultimoChar;
+            StringBuilder subLinea;
+            boolean dotFound = false, finished;
+            int copiaPosicionLinea;
+            while (true) {
+                // Cargar siguiente linea
+                posicionLinea++;
+                lineaTemp = documento.get(posicionLinea);
+
+                // Verificar si se debe terminar
+                finished = ((posicionLinea >= documento.size()) || lineaTemp.contains("END") || lineaTemp.contains("IGNORE")  ||
+                        lineaTemp.contains("PRODUCTIONS"));
+
+                if (finished) break;
+
+                if (!lineaTemp.equals("")){
+                    subLinea = new StringBuilder(lineaTemp);
+                    // Buscar punto del final
+                    copiaPosicionLinea = posicionLinea;  // Para identificar errores en inicio de linea
+
+                    // Ver si necesita un punto
+                    if (lineaTemp.contains("=")){
+                        while (!finished && !dotFound){
                             ultimoChar = subLinea.charAt(subLinea.length() - 1);
                             if (ultimoChar == '.'){
                                 dotFound = true;
                             } else {
                                 // Si no se ha encontrado, hay que concatenar con la linea de abajo
-                                i++;
-                                subLinea += documento.get(i);
+                                posicionLinea++;
+                                String nextLine = documento.get(posicionLinea);
+                                subLinea.append(nextLine);
+                                finished = ((posicionLinea >= documento.size()) || nextLine.contains("IGNORE")  ||
+                                        nextLine.contains("END")  || nextLine.contains("PRODUCTIONS"));
                             }
                         }
 
                         // Verificar si se encontro
                         if (dotFound){
-                            // Intercambiar variables, porque sí
-                            linea = subLinea;
+                            // Convertir la linea concatenada en la linea a analizar
+                            lineaTemp = subLinea.toString();
                             dotFound = false;
                         } else {
-                            errores.add("Error al declarar un keyword: Hace falta un punto final. Linea: " + String.valueOf(i + 1));
+                            errores.add("Error al declarar un token: Hace falta un punto final. Linea: " + String.valueOf(copiaPosicionLinea + 1));
                             existenErrores = true;
                             break;
                         }
+                    } else {
+                        // Es solamente un identificador
+                        // Hay que verificar si es valido
+                        // Que no tenga punto al final
+                        ultimoChar = subLinea.charAt(subLinea.length() - 1);
+                        if (ultimoChar == '.'){
+                            errores.add("Error al declarar un token. Existe un punto de más. Linea: " + String.valueOf(posicionLinea + 1));
+                            existenErrores = true;
+                            break;
+                        }
+                        Pair<Integer, String> resultado = identifyIdentificator(0, lineaTemp.toCharArray());
 
-                        // Verificar que tenga divisor de asignacion
-                        keywordsCorrectly = linea.contains("=");
-
-                        // Si se encuentra una linea incorrecta
-                        if (keywordsCorrectly) {
-                            String[] seccionesLinea = linea.split("=");
-                            // Limpiar correctamente el identificador
-                            Pair<Integer, String> identificatorCharacterPair = identifyIdentificator(0, seccionesLinea[0].toCharArray());
-
-                            // Corregir el regex de la palabra reservada
-                            String newRegex = seccionesLinea[1];
-                            int inicioNewRegex = newRegex.indexOf("\"") + 1;
-                            int endNewRegex = newRegex.lastIndexOf("\"");
-
-                            if (inicioNewRegex == (endNewRegex + 1)) {
-                                errores.add("Error al declarar el keyword '" + identificatorCharacterPair.getValue() + "', " +
-                                        "faltan unas comillas. Linea: " + String.valueOf(i + 1));
+                        if (resultado != null){
+                            // Verificar si existe el identificador
+                            boolean exists = caracteres.containsKey(resultado.getValue());
+                            if (!exists){
+                                errores.add("Error al declarar un token. No existe la variable '" + lineaTemp.trim() + "'. Linea: " + String.valueOf(posicionLinea + 1));
                                 existenErrores = true;
                                 break;
                             }
 
-                            newRegex = newRegex.substring(inicioNewRegex, endNewRegex);
-
-                            palabrasReservadasRegex.put(identificatorCharacterPair.getValue(), newRegex);
-
                         } else {
-                            errores.add("Error al declarar un keyword. Linea: " + String.valueOf(i + 1));
+                            errores.add("Error al declarar un token. Se utilizó un identificador invalido '" + lineaTemp.trim() + "'. Linea: " + String.valueOf(posicionLinea + 1));
                             existenErrores = true;
                             break;
                         }
-
                     }
+
+                    // Guardar lineas con token
+                    tokensEnBruto.add(lineaTemp);
                 }
             }
+        } else {
+            posicionLinea = posicionLineaBackup;
+        }
 
-            // TOKENS: Guardar las lineas que contienen tokens
-            if (tokens){
-                String linea;
-                System.out.println("Cargando tokens...");
 
-                // Establecer final de loop de busqueda
-                int finBusquedaTokens;
-                if (whitespace){
-                    finBusquedaTokens = inicioWhiteSpace;
-                }
-                else {
-                    finBusquedaTokens = lineaFinal;
-                }
-
-                // Obtener las lineas con tokens
-                char ultimoChar;
-                String subLinea;
-                boolean dotFound = false;
-                for (int i = inicioTokens + 1; i < finBusquedaTokens; i++) {
-                    linea = documento.get(i);
-                    if (!linea.equals("")){
-                        subLinea = linea;
-                        // Buscar punto del final
-                        while ((i < finBusquedaTokens) && !dotFound){
-                            ultimoChar = subLinea.charAt(subLinea.length() - 1);
-                            if (ultimoChar == '.'){
-                                dotFound = true;
-                            } else {
-                                // Si no se ha encontrado, hay que concatenar con la linea de abajo
-                                i++;
-                                subLinea += documento.get(i);
-                            }
-                        }
-
-                        // Verificar si se encontro
-                        if (dotFound){
-                            // Intercambiar variables, porque sí
-                            linea = subLinea;
-                            dotFound = false;
-                        } else {
-                            errores.add("Error al declarar un token: Hace falta un punto final. Linea: " + String.valueOf(i + 1));
-                            existenErrores = true;
-                            break;
-                        }
-
-                        tokensEnBruto.add(linea);
-                    }
-                }
-            }
-
-            // WHITESPACE: Verificar que se hayan ingresado correctamente los whitespace
-            if (whitespace){
-                String linea;
-                System.out.println("Cargando whitespaces...");
-
-                char ultimoChar;
-                String subLinea;
-                boolean dotFound = false;
-                for (int i = inicioWhiteSpace; i < lineaFinal; i++) {
-                    linea = documento.get(i);
-                    if (!linea.equals("")){
-                        subLinea = linea;
-                        // Buscar punto del final
-                        while ((i < lineaFinal) && !dotFound){
-                            ultimoChar = subLinea.charAt(subLinea.length() - 1);
-                            if (ultimoChar == '.'){
-                                dotFound = true;
-                            } else {
-                                // Si no se ha encontrado, hay que concatenar con la linea de abajo
-                                i++;
-                                subLinea += documento.get(i);
-                            }
-                        }
-
-                        // Verificar si se encontro
-                        if (dotFound){
-                            // Intercambiar variables, porque sí
-                            linea = subLinea;
-                            dotFound = false;
-                        } else {
-                            errores.add("Error al declarar un whitespace: Hace falta un punto final. Linea: " + String.valueOf(i + 1));
-                            existenErrores = true;
-                            break;
-                        }
-
-                        whitespaceCorrectly = linea.contains("IGNORE");
-
-                        // Si se encuentra una linea incorrecta
-                        if (whitespaceCorrectly) {
-                            String[] seccionesLinea = linea.split("IGNORE");
-                            String palabra = seccionesLinea[1];
-                            String nuevapalabra = "";
-                            for (int j = 0; j < palabra.length() - 1; j++) {
-                                char c = palabra.charAt(j);
-                                if (c == '\\'){
-                                    nuevapalabra += "\\\\\\\\";
-                                } else {
-                                    nuevapalabra += c;
-                                }
-                            }
-                            nuevapalabra += ".";
-                            palabrasIgnoradas.add(nuevapalabra);
-                        } else {
-                            errores.add("Error al declarar un whitespace. Linea: " + String.valueOf(i + 1));
-                            existenErrores = true;
-                            break;
-                        }
-                    }
-                }
+        /*
+            WHITESPACE
+        */
+        // Encontrar WhiteSpace declaration
+        posicionLineaBackup = posicionLinea;
+        for (; posicionLinea < documento.size(); posicionLinea++) {
+            whitespaceExists = documento.get(posicionLinea).contains("IGNORE");  // Si encuentra IGNORE indica donde esta
+            if (whitespaceExists){
+                break;
             }
         }
 
-        // Revisar errores
-        if (inicio && end){
+
+        // WHITESPACE: Verificar que se hayan ingresado correctamente los whitespace
+        if (whitespaceExists){
+            System.out.println("Cargando whitespaces...");
+
+            char ultimoChar;
+            StringBuilder subLinea;
+            boolean dotFound = false, finished;
+            int copiaPosicionLinea;
+            posicionLinea--;  // Se debe disminuir en 1 el contador, porque IGNORE tiene una linea de declaracion
+            while (true) {
+                // Cargar siguiente linea
+                posicionLinea++;
+                lineaTemp = documento.get(posicionLinea);
+                subLinea = new StringBuilder(lineaTemp);
+
+                // Verificar si se debe terminar
+                finished = ((posicionLinea >= documento.size()) ||
+                        lineaTemp.contains("END") || lineaTemp.contains("PRODUCTIONS"));
+
+                if (finished) break;
+
+                // Si es una linea buena
+                if (!lineaTemp.equals("")){
+                    // Buscar punto del final
+                    copiaPosicionLinea = posicionLinea;  // Para identificar errores en inicio de linea
+                    while (!finished && !dotFound){
+                        ultimoChar = subLinea.charAt(subLinea.length() - 1);
+                        if (ultimoChar == '.'){
+                            dotFound = true;
+                        } else {
+                            // Si no se ha encontrado, hay que concatenar con la linea de abajo
+                            posicionLinea++;
+                            String nextLine = documento.get(posicionLinea);
+                            subLinea.append(nextLine);
+                            finished = ((posicionLinea >= documento.size()) ||
+                                    nextLine.contains("END")  || nextLine.contains("PRODUCTIONS"));
+                        }
+                    }
+
+                    // Verificar si se encontro
+                    if (dotFound){
+                        // Convertir la linea concatenada en la linea a analizar
+                        lineaTemp = subLinea.toString();
+                        dotFound = false;
+                    } else {
+                        errores.add("Error al declarar un whitespace: Hace falta un punto final. Linea: " + String.valueOf(copiaPosicionLinea + 1));
+                        existenErrores = true;
+                        break;
+                    }
+
+
+                    // Si se encuentra una linea correcta
+                    if (lineaTemp.contains("IGNORE")) {
+                        String[] seccionesLinea = lineaTemp.split("IGNORE");
+                        String palabra = seccionesLinea[1].trim();
+                        whitespaceEnBruto.add(palabra);
+                    } else {
+                        errores.add("Error al declarar un whitespace. Linea: " + String.valueOf(posicionLinea + 1));
+                        existenErrores = true;
+                        break;
+                    }
+                }
+            }
+        } else {
+            posicionLinea = posicionLineaBackup;
+        }
+
+
+        /*
+            PRODUCTIONS
+         */
+        // Encontrar Token declaration
+        posicionLineaBackup = posicionLinea;
+        for (; posicionLinea < documento.size(); posicionLinea++) {
+            productionsExists = documento.get(posicionLinea).contains("PRODUCTIONS");
+            if (productionsExists){
+                break;
+            }
+        }
+
+        // PRODUCTIONS: Guardar las lineas que contienen tokens
+        if (productionsExists){
+            System.out.println("Cargando productions...");
+
+
+            // Obtener las lineas con producciones
+            char ultimoChar;
+            StringBuilder subLinea;
+            boolean dotFound = false, finished;
+            int copiaPosicionLinea;
+            while (true) {
+                // Cargar siguiente linea
+                posicionLinea++;
+                lineaTemp = documento.get(posicionLinea);
+
+                // Verificar si se debe terminar
+                finished = (posicionLinea >= documento.size()) || lineaTemp.contains("END");
+
+                if (finished) break;
+
+                if (!lineaTemp.equals("")){
+                    subLinea = new StringBuilder(lineaTemp);
+
+                    // Buscar punto del final
+                    copiaPosicionLinea = posicionLinea;  // Para identificar errores en inicio de linea
+                    while (!finished && !dotFound){
+                        ultimoChar = subLinea.charAt(subLinea.length() - 1);
+                        if (ultimoChar == '.'){
+                            dotFound = true;
+                        } else {
+                            // Si no se ha encontrado, hay que concatenar con la linea de abajo
+                            posicionLinea++;
+                            String nextLine = documento.get(posicionLinea);
+                            subLinea.append(nextLine);
+                            finished = (posicionLinea >= documento.size()) || nextLine.contains("END");
+                        }
+                    }
+
+                    // Verificar si se encontro
+                    if (dotFound){
+                        // Convertir la linea concatenada en la linea a analizar
+                        lineaTemp = subLinea.toString();
+                        dotFound = false;
+                    } else {
+                        errores.add("Error al declarar una producción: Hace falta un punto final. Linea: " + String.valueOf(copiaPosicionLinea + 1));
+                        existenErrores = true;
+                        break;
+                    }
+
+                    // Guardar lineas con token
+                    productionsEnBruto.add(lineaTemp);
+                }
+            }
+        } else {
+            posicionLinea = posicionLineaBackup;
+        }
+
+
+
+        /*
+            END
+         */
+        // Encontrar END declaration
+        for (; posicionLinea < documento.size(); posicionLinea++) {
+            lineaTemp = documento.get(posicionLinea);
+            endExists = lineaTemp.contains("END");
+            if (endExists) {
+                identFinal = lineaTemp.split(" ")[1].trim();  // Guarda identificador de final
+                break;
+            }
+        }
+
+
+        /*
+        Revisar y mostrar errores
+         */
+        if (beginExists && endExists){
             identIguales = identFinal.equals(identInicio);
         }
         if (!identIguales) System.err.println("Error: Los identificadores de inicio y final no coinciden.");
-        if (!inicio) System.err.println("Error: Declaracion de inicio incorrecta");
-        if (!end) System.err.println("Error: No se coloco correctamente el final del documento");
+        if (!beginExists) System.err.println("Error: Declaracion de inicio incorrecta");
+        if (!endExists) System.err.println("Error: No se colocó correctamente el final del documento");
         if (existenErrores){
             for (String error : errores) {
                 System.err.println(error);
             }
         }
 
-        return inicio && end && !existenErrores && identIguales;
+        return beginExists && endExists && !existenErrores && identIguales;
     }
 
 
@@ -590,7 +657,7 @@ public class CocolRReader {
         }
 
         // IGNORE palabras
-        for (String palabra : palabrasIgnoradas) {
+        for (String palabra : whitespaceEnBruto) {
             try {
                 char[] conjuntoIgnorar = palabra.toCharArray();
                 result = identifyCharacterRegex(conjuntoIgnorar, conjuntoIgnorar.length - 2);
@@ -599,18 +666,8 @@ public class CocolRReader {
                     return false;
                 }
                 String nuevaPalabraIgnorar = result.getValue();
-                String nuevapalabra = "";
-                for (int j = 0; j < nuevaPalabraIgnorar.length(); j++) {
-                    char c = nuevaPalabraIgnorar.charAt(j);
-                    if (c == '\\' || c == '\n' || c == '\t' || c == '\r'){
-                        nuevapalabra += "(\\\\" + "u" + Integer.toHexString('÷' | 0x10000).substring(1) + ")";
-                    } else {
-                        nuevapalabra += c;
-                    }
-                }
 
-
-                whitespace.add(nuevapalabra);
+                whitespace.add(nuevaPalabraIgnorar);
 
             } catch (IndexOutOfBoundsException e){
                 System.err.println("Error: Conjunto de whitespace mal declarado: '" + palabra + "'.");
@@ -618,10 +675,98 @@ public class CocolRReader {
             }
         }
 
+        /*
+         * TIENE UN ERROR: SI SE INCLUYE ALGO DESPUES DE IDENT NO LO RECONOCE COMO ERROR
+         */
+        // PRODUCTION regex
+        // Por cada lina en bruto
+        String productionIdentificator, semAction = "", attribute = "", productionHead;
+        ArrayList<String> productionBody;
+        for (String posibleProduction : productionsEnBruto) {
+            if (posibleProduction.contains("=")){
+                // Dividir producción
+                String[] productionBrute = posibleProduction.split("=");
 
+                // Obtener cabeza de produccion
+                productionHead = productionBrute[0];
+                result = identifyIdentificator(0, productionHead.toCharArray());
+                if (result != null){
+                    // Guardar identificador de produccion
+                    productionIdentificator = result.getValue();
+
+                    // Verificar si hay Atributos
+                    if (productionHead.contains("<.")){  // Verificar inicio de atributo
+                        char letra, siguienteLetra = ' ';
+                        int letrasAtributo = productionHead.indexOf("<.") + 2;  // En que parte de cabeza buscar inicio
+                        siguienteLetra = productionHead.charAt(letrasAtributo);
+                        while (true) {
+                            try{
+                                letrasAtributo++;
+                                letra = siguienteLetra;
+                                siguienteLetra = productionHead.charAt(letrasAtributo);
+
+                                // Verificar si encontro final de atributo
+                                if (letra == '.' && siguienteLetra == '>'){
+                                    break;
+                                }
+
+                                attribute += letra;
+                            }
+                            catch (Exception e){
+                                System.err.println("Error: Atributo en production mal declarado: '" + productionHead + "'.");
+                                return false;
+                            }
+                        }
+                    }
+
+                    // Verificar si hay Acciones Semánticas
+                    if (productionHead.contains("(.")){  // Verificar inicio de atributo
+                        char letra, siguienteLetra;
+                        int letrasSemAction= productionHead.indexOf("(.") + 2;  // En que parte de cabeza buscar inicio
+                        siguienteLetra = productionHead.charAt(letrasSemAction);
+                        while (true) {
+                            try{
+                                letrasSemAction++;
+                                letra = siguienteLetra;
+                                siguienteLetra = productionHead.charAt(letrasSemAction);
+
+                                // Verificar si encontro final de atributo
+                                if (letra == '.' && siguienteLetra == ')'){
+                                    break;
+                                }
+
+                                semAction += letra;
+                            }
+                            catch (Exception e){
+                                System.err.println("Error: Acción semántica en production mal declarada: '" + productionHead + "'.");
+                                return false;
+                            }
+                        }
+                    }
+
+                    // Obtener el cuerpo de la produccion
+                    productionBody = identifyProductionBody(productionBrute[1], productionIdentificator);
+
+                    // Crear nueva produccion
+                    if (productionBody != null){
+                        grammar.addProductions(productionIdentificator, productionBody);
+                    } else {
+                        System.err.println("Error: Production mal declarada: '" + productionBrute[1] + "'.");
+                        return false;
+                    }
+
+                } else {
+                    System.err.println("Error: " + productionBrute[0] + " no es un identificador correcto para Production.");
+                    return false;
+                }
+            } else {
+                // Error. Production no tiene signo de igual
+                System.err.println("Error: La producción '" + posibleProduction + "' no tiene cuerpo.");
+                return false;
+            }
+        }
         return true;
     }
-
 
     /**
      * Metodo que tiene como objetivo parsear una linea de declaracion de regex. Para ello, lee la linea de derecha a
@@ -957,7 +1102,7 @@ public class CocolRReader {
                         if (regexConjuntoIdentificado != null){
                             newRegex += "(" + regexConjuntoIdentificado + ")";
                         } else {
-                            System.err.println("Error: No se ha declarado el identificador: '" + posibleIdentificador + "'.");
+                            System.err.println("Error: La variable '" + posibleIdentificador + "' no existe.");
                             return null;
                         }
 
@@ -974,9 +1119,229 @@ public class CocolRReader {
         return newRegex;
     }
 
-    private boolean verifyPreSyntax(String tokenExpr, char char1, char char2) {
+
+    private ArrayList<String> identifyProductionBody(String productionBody, String productionIdentificator) {
+        // Examinar sintax
+        boolean goodSintax = verifyPreSyntax(productionBody,'[',']');
+        if (!goodSintax) return null;
+
+        goodSintax = verifyPreSyntax(productionBody,'{','}');
+        if (!goodSintax) return null;
+
+        goodSintax = verifyPreSyntax(productionBody,'(',')');
+        if (!goodSintax) return null;
+
+        // Analizar cada una de las letras
+        String newProduction = "";
+        ArrayList<String> newProductions = new ArrayList<String>();
+        int p;
+        for(int i = 0; i < productionBody.length(); i++){
+            char chr = productionBody.charAt(i);  // leer nueva letra
+            switch(chr){
+                // SYMBOL: String
+                case '"':
+                    i++;
+                    chr = productionBody.charAt(i);  // Leer la siguiente letra despues de las comillas
+                    while(chr != '"'){
+                        // Agregar cada letra a nueva produccion
+                        newProduction += " " + chr;
+                        i++;
+
+                        // Verificar si ya se llego al final de la produccion y no se encontraron las comillas
+                        if(i == productionBody.length()){
+                            System.err.println("Error: Cerrar comillas para declaracion de String en producción '" + productionIdentificator + "'.");
+                            return null;
+                        }
+
+                        // Obtener siguiente letra
+                        chr =  productionBody.charAt(i);
+                    }
+
+                    // Verificar si hay algun atributo
+                    ///////////////////////////////////////////////////PENDIEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEENTE
+                    break;
+
+                // SYMBOL: Char
+                case '\'':
+                    i++;
+                    chr = productionBody.charAt(i);
+                    // Verificar caracteres de escape
+                    if(chr == '\\' && productionBody.charAt(i + 2) != '\''){
+                        System.err.println("Error: El char no esta declarado correctamente: '\\" + chr + productionBody.charAt(i + 1) + ". Se esperaba: '\\" + chr + "'");
+                        return null;
+                    } else {
+                        newProduction += " " + String.valueOf(chr);
+                        i++;
+                    }
+
+                    // Verificar si hay algun atributo
+                    ///////////////////////////////////////////////////PENDIEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEENTE
+                    break;
+
+                // PRODUCTION TERM |
+                case '|':
+                    // Tomar lo que se encuentra a la derecha de | y volver a llamar a funcion
+                    String subBodyProduction = productionBody.substring(i + 1, productionBody.length());
+                    ArrayList<String> subNewProductions = identifyProductionBody(subBodyProduction, productionIdentificator);
+                    i = productionBody.length();  // Hacer que se termine el procesamiento
+                    if (subNewProductions != null){
+                        // Agregar todas las producciones calculadas de la subparte
+                        newProductions.addAll(subNewProductions);
+                    } else {
+                        System.err.println("Error: La producción '" + productionIdentificator + "' tiene un error en la declaracion de su cuerpo");
+                        return null;
+                    }
+                    break;
+
+                // FIN PRODUCTION
+                case '.':
+                    // Largo de declaracion de token
+                    i = productionBody.length();
+                    break;
+
+                // PRODUCTION FACTOR: {}
+                case '{':
+                    // Verificar que se cierre
+                    int cantidadLlaves = 1;
+
+                    // Copiar contador
+                    p = i;
+                    i++;
+
+                    // Encontrar fin de EXPRESSION
+                    while(cantidadLlaves != 0 && p < productionBody.length() - 1){
+                        p = p + 1;
+
+                        if(productionBody.charAt(p) == '{'){
+                            cantidadLlaves++;
+
+                        } else if(productionBody.charAt(p) == '}'){
+                            cantidadLlaves--;
+                        }
+                    }
+                    ArrayList<String> newRegexPrev = identifyProductionBody(productionBody.substring(i, p), productionIdentificator);
+                    if (newRegexPrev == null){
+                        System.err.println("Error: Declaración incorrecta de producción dentro de llaves. En produccion: " +
+                        productionIdentificator + ".");
+                        return null;
+                    }
+
+                    newProductions.addAll(newRegexPrev);  // AGREGAR LO QUE DEBE HACER LAS LLAVES
+
+                    // Actualizar contador
+                    i = p;
+                    break;
+
+                // PRODUCTIONS FACTOR: []
+                case '[':
+                    int cantidadCorchetes = 1;
+                    p = i;
+                    i++;
+                    // Encontrar fin de PRODUCTION EXPRESSION en p
+                    while(cantidadCorchetes != 0 && p < productionBody.length() - 1){
+                        p = p + 1;
+
+                        if(productionBody.charAt(p) == '['){
+                            cantidadCorchetes++;
+
+                        } else if(productionBody.charAt(p) == ']'){
+                            cantidadCorchetes--;
+                        }
+                    }
+
+                    newRegexPrev = identifyProductionBody(productionBody.substring(i, p), productionIdentificator);
+                    if (newRegexPrev == null){
+                        System.err.println("Error: Declaración incorrecta de producción dentro de corchetes. En produccion: " +
+                                productionIdentificator + ".");
+                        return null;
+                    }
+                    newProductions.addAll(newRegexPrev);  // AGREGAR LO QUE DEBEN HACER LOS CORCHETES
+
+                    // Actualizar contador
+                    i = p;
+                    break;
+
+                // PRODUCTION EXPRESSION: ()
+                case '(':
+                    int cantidadParentesis = 1;
+                    p = i;
+                    i++;
+                    // Encontrar fin de TOKENEXPR en p
+                    while(cantidadParentesis != 0 && p < productionBody.length() - 1){
+                        p = p + 1;
+
+                        if(productionBody.charAt(p) == '('){
+                            cantidadParentesis++;
+
+                        } else if(productionBody.charAt(p) == ')'){
+                            cantidadParentesis--;
+                        }
+                    }
+
+                    newRegexPrev = identifyProductionBody(productionBody.substring(i, p), productionIdentificator);
+                    if (newRegexPrev == null){
+                        System.err.println("Error: Declaración incorrecta de producción dentro de corchetes. En produccion: " +
+                                productionIdentificator + ".");
+                        return null;
+                    }
+                    newProductions.addAll(newRegexPrev);
+
+                    // Actualizar contador
+                    i = p;
+                    break;
+
+                case ' ':
+                    break;
+
+                case '<':
+                    // SE DEBE AGREGAR SOPORTE PARA ACCIONES SEMANTICAS
+                    break;
+
+                // EPSILON
+                case '#':
+                    newProduction += " \"\"";
+                    break;
+
+                // SYMBOL: Podria ser un ident, por lo que se va a guardar en el objeto Grammar
+                default:
+                    Pair<Integer, String> posibleIdentificadorIdentificado = identifyIdentificator(i, productionBody.toCharArray());
+
+                    if (posibleIdentificadorIdentificado != null){
+                        i = posibleIdentificadorIdentificado.getKey();
+                        String posibleNonTerminal = posibleIdentificadorIdentificado.getValue();
+
+                        // Agregar a la produccion de ahorita
+                        newProduction += " " + posibleNonTerminal;
+
+                        // Revisar si hay algun atributo
+                        // PENDIEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEENTE
+
+
+                    } else {
+                        System.err.println("Error: No se ha declarado correctamente un identificador en tokens");
+                        return null;
+                    }
+
+                    break;
+            }
+        }
+
+        newProductions.add(newProduction);
+
+        return newProductions;
+    }
+
+
+    /**
+     * Metodo que sirve para verificar que los símbolos de agrupamiento se encuentren correctamente posicionados
+     * @param expression Es el texto en el que se quieren examinar los signos de agrupacion
+     * @param char1 Es el caracter de apertura
+     * @param char2 Es el caracter de cierre
+     * @return True, si se encuentran balanceados. False, no estan balanceados.
+     */
+    private boolean verifyPreSyntax(String expression, char char1, char char2) {
         int characters = 0;
-        char[] tokenExpr1 = tokenExpr.toCharArray();
+        char[] tokenExpr1 = expression.toCharArray();
 
         // Contar cuantos parentesis/corchetes hay
         for(int n = 0; n < tokenExpr1.length; n++){
@@ -1602,5 +1967,9 @@ public class CocolRReader {
         }catch(Exception e){
             System.err.println("Error: al generar archivo Lexer1.java");
         }
+    }
+
+    public Grammar getGrammar() {
+        return grammar;
     }
 }
