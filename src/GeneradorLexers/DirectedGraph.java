@@ -1,5 +1,6 @@
 package GeneradorLexers;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -12,7 +13,7 @@ import java.util.*;
  * @link https://github.com/shaunak1111/Directed-Graph-Implementation-java/blob/master/GeneradorLexers.DirectedGraph.java
  */
 
-public class DirectedGraph {
+public class DirectedGraph  implements Serializable {
     /**
      * Atributos
      */

@@ -1,5 +1,6 @@
 package GeneradorLexers;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.LinkedList;
 
@@ -9,7 +10,7 @@ import java.util.LinkedList;
  * @version 1.0
  * @since 5/08/207
  */
-public class Dstate<E> {
+public class Dstate<E>  implements Serializable {
     /**
      * Atributos
      */

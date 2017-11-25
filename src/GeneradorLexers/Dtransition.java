@@ -1,12 +1,14 @@
 package GeneradorLexers;
 
+import java.io.Serializable;
+
 /**
  * La presente clase tiene como objetivo simular una Dtrancision para un DFA
  * @author Eric Mendoza
  * @version 1.0
  * @since 5/08/207
  */
-public class Dtransition {
+public class Dtransition  implements Serializable {
     /**
      * Atributos
      */

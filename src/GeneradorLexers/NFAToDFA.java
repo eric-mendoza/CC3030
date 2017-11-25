@@ -1,5 +1,6 @@
 package GeneradorLexers;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -10,7 +11,7 @@ import java.util.LinkedList;
  * @version 1.0
  * @since 3/08/207
  */
-public class NFAToDFA {
+public class NFAToDFA  implements Serializable {
     /**
      * Atributos
      */

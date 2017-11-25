@@ -1,5 +1,6 @@
 package GeneradorLexers;
 
+import java.io.Serializable;
 import java.util.Scanner;
 
 /**
@@ -8,7 +9,7 @@ import java.util.Scanner;
  * @version 1.0
  * @since 2/09/2017
  */
-public class TestAutomatonCreators {
+public class TestAutomatonCreators  implements Serializable {
     public static void runTest(){
         /**
          * Pedir a usuario que ingrese un regex

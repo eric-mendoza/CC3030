@@ -1,12 +1,14 @@
 package GeneradorLexers;
 
+import java.io.Serializable;
+
 /**
  * La presente clase tiene como objetivo representar un token, para guardar así información pertinente importante
  * @author Eric Mendoza
  * @version 1.0
  * @since 9/09/2017
  */
-public class Token {
+public class Token  implements Serializable {
     private int kind;    // token code
     private int pos;     // token position in the source text (starting at 0)
     private int line;    // token line (starting at 1)

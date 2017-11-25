@@ -1,5 +1,6 @@
 package GeneradorLexers;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -11,7 +12,7 @@ import java.util.Stack;
  * @version 1.0
  * @since 11/08/207
  */
-public class RegExToDFA {
+public class RegExToDFA  implements Serializable {
     /**
      * Atributos
      */

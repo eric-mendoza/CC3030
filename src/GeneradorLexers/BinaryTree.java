@@ -1,5 +1,6 @@
 package GeneradorLexers;
 
+import java.io.Serializable;
 import java.util.HashSet;
 
 /**
@@ -11,7 +12,7 @@ import java.util.HashSet;
  * @author David Matuszek
  * @version Jan 25, 2004
  */
-public class BinaryTree {
+public class BinaryTree  implements Serializable {
     /**
      * The value (data) in this node of the binary tree; may be of
      * any object type.

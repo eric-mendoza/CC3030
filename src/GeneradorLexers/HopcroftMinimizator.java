@@ -1,5 +1,6 @@
 package GeneradorLexers;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -9,7 +10,7 @@ import java.util.*;
  * @version 1.0
  * @since 08/08/207
  */
-public class HopcroftMinimizator {
+public class HopcroftMinimizator  implements Serializable {
     /**
      * Atributos
      */

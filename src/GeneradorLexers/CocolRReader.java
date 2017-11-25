@@ -10,7 +10,7 @@ import java.util.*;
  * @version 1.0
  * @since 2/09/2017
  */
-public class CocolRReader {
+public class CocolRReader implements Serializable{
     public CocolRReader(){
         idenNFAToDFA.generateSimpleEClosure(identAutomata);
         simulator = new Simulator();
@@ -26,7 +26,7 @@ public class CocolRReader {
     /**
      * Algunos regex importantes
      */
-    private String letterRegex = "a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z";
+    private String letterRegex = "a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|_";
     private String digitRegex = "0|1|2|3|4|5|6|7|8|9";
     private String identRegex = "(" + letterRegex + ")((" + letterRegex + ")|(" + digitRegex + "))*";
     private DirectedGraph identAutomata = createAutomaton(identRegex);
@@ -53,6 +53,9 @@ public class CocolRReader {
     private HashMap<String, String> caracteresRegex = new HashMap<String, String>();
     private HashMap<String, String> palabrasReservadasRegex = new HashMap<String, String>();  // Se va a guardar <iden, keyword>
     private HashMap<String, String> tokensRegex = new HashMap<String, String>();  // <tokenIden, tokenRegex>
+    private ArrayList<String> tokensKeysOrdered = new ArrayList<String>();  // Se guardan las llaves para acceder a ellas en orden despues
+
+
     private HashMap<String, ArrayList<String>> productions = new HashMap<String, ArrayList<String>>();  // <head, body>
 
 
@@ -175,7 +178,9 @@ public class CocolRReader {
 
                     // Verificar que exista signo de igual
                     if (lineaTemp.contains("=")) {
-                        String[] lineSections = lineaTemp.split("=");
+                        int signoIgual = lineaTemp.indexOf("=");
+                        String[] lineSections = {lineaTemp.substring(0, signoIgual), lineaTemp.substring(signoIgual + 1)};
+
                         Pair<Integer, String> identificatorCharacterPair = identifyIdentificator(0, lineSections[0].toCharArray());
                         if (identificatorCharacterPair != null){
                             caracteresKeysOrdered.add(identificatorCharacterPair.getValue());
@@ -263,6 +268,7 @@ public class CocolRReader {
 
                     // Si se encuentra una linea correcta
                     if (lineaTemp.contains("=")) {
+
                         String[] seccionesLinea = lineaTemp.split("=");
                         // Verificar si se utilizo un identificador valido
                         Pair<Integer, String> identificatorKeywordPair = identifyIdentificator(0, seccionesLinea[0].toCharArray());
@@ -617,7 +623,8 @@ public class CocolRReader {
             if (!posibleToken.equals("")){
                 if (posibleToken.contains("=")){
                     // Dividir token
-                    String[] tokenBrute = posibleToken.split("=");
+                    int signoIgual = posibleToken.indexOf("=");
+                    String[] tokenBrute = {posibleToken.substring(0, signoIgual), posibleToken.substring(signoIgual + 1)};
 
                     // Obtener identificador token
                     result = identifyIdentificator(0, tokenBrute[0].toCharArray());
@@ -630,6 +637,7 @@ public class CocolRReader {
                         // Crear nuevo token
                         if (tokenRegex != null){
                             tokensRegex.put(tokenIdentificator, tokenRegex);
+                            tokensKeysOrdered.add(tokenIdentificator);
                         } else {
                             System.err.println("Error: Token mal declarado: '" + tokenBrute[1] + "'.");
                             return false;
@@ -648,6 +656,7 @@ public class CocolRReader {
                     if (result != null){
                         tokenIdentificator = tokenRegex = result.getValue();
                         tokensRegex.put(tokenIdentificator, tokenRegex);
+                        tokensKeysOrdered.add(tokenIdentificator);
                     } else {
                         System.err.println("Error: " + posibleToken + " no es un token. Debe utilizar un ident.");
                         return false;
@@ -685,7 +694,8 @@ public class CocolRReader {
         for (String posibleProduction : productionsEnBruto) {
             if (posibleProduction.contains("=")){
                 // Dividir producción
-                String[] productionBrute = posibleProduction.split("=");
+                int signoIgual = posibleProduction.indexOf("=");
+                String[] productionBrute = {posibleProduction.substring(0, signoIgual), posibleProduction.substring(signoIgual + 1)};
 
                 // Obtener cabeza de produccion
                 productionHead = productionBrute[0];
@@ -744,14 +754,20 @@ public class CocolRReader {
                         }
                     }
 
+                    // Asegurarse que no se haya dividido en mas de dos pedazos
+                    String productionBodyBrute = "";
+                    for (int i = 1; i < productionBrute.length; i++) {
+                        productionBodyBrute += productionBrute[i];
+                    }
+
                     // Obtener el cuerpo de la produccion
-                    productionBody = identifyProductionBody(productionBrute[1], productionIdentificator);
+                    productionBody = identifyProductionBody(productionBodyBrute, productionIdentificator);
 
                     // Crear nueva produccion
                     if (productionBody != null){
                         grammar.addProductions(productionIdentificator, productionBody);
                     } else {
-                        System.err.println("Error: Production mal declarada: '" + productionBrute[1] + "'.");
+                        System.err.println("Error: La produccion '" + productionIdentificator + "' está mal declarada: '" + productionBrute[1] + "'.");
                         return false;
                     }
 
@@ -957,9 +973,21 @@ public class CocolRReader {
                     i++;
                     chr = tokenExpr.charAt(i);
                     while(chr != '"'){
-                        // Agregar cada letra a nuevo regex
-                        newRegex += chr;
-                        i++;
+                        // verificar si es un caracter de escape
+                        if (chr == '\\'){
+                            // Siempre agregar el siguiente
+                            i++;
+                            chr = tokenExpr.charAt(i);
+
+                            // Agregar cada letra a nuevo regex
+                            newRegex += "\\";
+                            newRegex += chr;
+                            i++;
+                        } else {
+                            // Agregar cada letra a nuevo regex
+                            newRegex += chr;
+                            i++;
+                        }
 
                         // Verificar si no colocaron las dos comilllas
                         if(i == tokenExpr.length()){
@@ -977,9 +1005,16 @@ public class CocolRReader {
                     i++;
                     chr = tokenExpr.charAt(i);
                     // Verificar caracteres de escape
-                    if(chr == '\\' && tokenExpr.charAt(i + 2) != '\''){
-                        System.err.println("Error: El char no esta declarado correctamente: '\\" + chr + tokenExpr.charAt(i + 1) + ". Se esperaba: '\\" + chr + "'");
-                        return null;
+                    if(chr == '\\'){
+                        if (tokenExpr.charAt(i + 2) != '\''){
+                            System.err.println("Error: El char no esta declarado correctamente: '\\" + chr + tokenExpr.charAt(i + 1) + ". Se esperaba: '\\" + chr + "'");
+                            return null;
+                        } else {
+                            i++;
+                            newRegex += "\\";
+                            newRegex += tokenExpr.charAt(i);
+                            i++;
+                        }
                     } else {
                         newRegex += chr;
                         i++;
@@ -1142,9 +1177,10 @@ public class CocolRReader {
                 case '"':
                     i++;
                     chr = productionBody.charAt(i);  // Leer la siguiente letra despues de las comillas
+                    newProduction += ' ';
                     while(chr != '"'){
                         // Agregar cada letra a nueva produccion
-                        newProduction += " " + chr;
+                        newProduction += chr;
                         i++;
 
                         // Verificar si ya se llego al final de la produccion y no se encontraron las comillas
@@ -1318,7 +1354,7 @@ public class CocolRReader {
 
 
                     } else {
-                        System.err.println("Error: No se ha declarado correctamente un identificador en tokens");
+                        System.err.println("Error: No se ha declarado correctamente un identificador en producciones");
                         return null;
                     }
 
@@ -1342,17 +1378,35 @@ public class CocolRReader {
     private boolean verifyPreSyntax(String expression, char char1, char char2) {
         int characters = 0;
         char[] tokenExpr1 = expression.toCharArray();
+        char actual, anterior = ' ', siguiente;  // Pare verificar si estan rodeados de quotes
 
         // Contar cuantos parentesis/corchetes hay
         for(int n = 0; n < tokenExpr1.length; n++){
-            if (tokenExpr1[n] == char1)
-                characters++;
-            else if (tokenExpr1[n] == char2)
-                characters--;
+            actual = tokenExpr1[n];
+            if (actual == char1)
+                if (n + 1 < tokenExpr1.length){  // Ver si todavia hay un caracter a la derecha
+                    siguiente = tokenExpr1[n + 1];
+                    if ((siguiente != '\'' || anterior != '\'') && (siguiente != '"' || anterior != '"')){
+                        characters++;
+                    }
+                } else {
+                    characters++;
+                }
+
+            else if (actual == char2)
+                if (n + 1 < tokenExpr1.length){  // Ver si todavia hay un caracter a la derecha
+                    siguiente = tokenExpr1[n + 1];
+                    if ((siguiente != '\'' || anterior != '\'') && (siguiente != '"' || anterior != '"')){
+                        characters--;
+                    }
+                } else {
+                    characters--;
+                }
             if(characters < 0){
                 System.err.println("Error: Declaracion incorrecta de token.\n\tVerificar los: " + char2 + ".");
                 return false;
             }
+            anterior = actual;
         }
         if(characters!=0){
             System.err.println("Error: Declaracion incorrecta de token.\n\tVerificar los: " + char1 + ".");
@@ -1573,21 +1627,50 @@ public class CocolRReader {
         char letter = futureRegex[i];
 
         // Buscar las siguientes comillas e ir creando regex
-        while (letter != '"'){
-            newRegex += letter;  // Agregar el primer caracter
+        while (true){
+            // Verificar si hay caracter de escape
+            if (letter != '"'){
+                newRegex += letter;  // Agregar el primer caracter
 
-            // Verificar que no es el ultimo caracter
-            char nextLetter = futureRegex[i - 1];
-            if(nextLetter != '"'){
-                // Agregar OR entre cada letra
-                newRegex += "|";
+                // Verificar que no es el ultimo caracter
+                char nextLetter = futureRegex[i - 1];
+                if(nextLetter != '"'){
+                    // Agregar OR entre cada letra
+                    newRegex += "|";
+                }
+
+                // Avanzar el retroceso de la declaracion del conjunto
+                i--;
+
+                // Obtener siguiente letra
+                letter = nextLetter;
+            } else {
+                char siguiente;
+                try {
+                    siguiente = futureRegex[i - 1];
+                } catch (IndexOutOfBoundsException e){
+                    siguiente = ' ';
+                }
+                if (siguiente != '\\'){
+                    break;
+                } else {
+                    // Agregar a regex
+                    newRegex += letter;
+
+                    // Verificar que no es el ultimo caracter
+                    char nextLetter = futureRegex[i - 1];
+                    if(nextLetter != '"'){
+                        // Agregar OR entre cada letra
+                        newRegex += "|";
+                    }
+
+                    // Avanzar el retroceso de la declaracion del conjunto
+                    i--;
+
+                    // Obtener siguiente letra
+                    letter = nextLetter;
+                }
             }
-
-            // Avanzar el retroceso de la declaracion del conjunto
-            i--;
-
-            // Obtener siguiente letra
-            letter = nextLetter;
         }
 
         return new Pair<Integer, String>(i, newRegex);
@@ -1709,7 +1792,7 @@ public class CocolRReader {
         return partLine;
     }
 
-    public void generateLexerJavaFile(){
+    public void generateLexerJavaFile() throws IOException {
         String programa = "";
 
         // Agregar imports
@@ -1718,7 +1801,9 @@ public class CocolRReader {
                 "\n" +
                 "import GeneradorLexers.*;\n" +
                 "import javafx.util.Pair;\n" +
-                "\n" +
+                "import java.io.FileInputStream;\n" +
+                "import java.io.ObjectInputStream;\n" +
+                "import java.io.IOException;\n" +
                 "import java.util.*;\n\n";
 
         // Agregar inicio de clase y variables
@@ -1733,7 +1818,7 @@ public class CocolRReader {
 
         // Constructor
         programa +=
-                "    public Lexer(){\n" +
+                "    public Lexer() throws IOException, ClassNotFoundException {\n" +
                 "        // Inicializar base de datos de identificadores de regex\n" +
                 "        tokensTypesAndRegexs = new ArrayList<Pair<String, String>>();\n" +
                 "\n" +
@@ -1746,13 +1831,24 @@ public class CocolRReader {
                 "        // Agregar Regex identificados\n";
 
         // Regex identificados
-        // 1) Characters / Tokens
-        Set<String> tokens = tokensRegex.keySet();
-        for (String identificador : tokens) {
-            programa +=
-                    "        tokensTypesAndRegexs.add(new Pair<String, String>(\"" + identificador + "\", \""
-                    + tokensRegex.get(identificador) + "\"));\n";
-        }
+        // Serializar los regexs para evitar caracteres especiales
+        ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream("tokensRegex.ser"));
+        out.writeObject(tokensRegex);
+        out.flush();
+        out.close();
+
+        // Agregar codigo a programa para deserealizar
+        programa += "\n" +
+                "        // Deserealizar los tokens y sus regexs\n" +
+                "        ObjectInputStream in = new ObjectInputStream(new FileInputStream(\"tokensRegex.ser\"));\n" +
+                "        HashMap<String, String> tokens = (HashMap<String, String>) in.readObject();\n" +
+                "        in.close();\n" +
+                "\n" +
+                "        // Agregar Regex identificados\n" +
+                "        for (String identificador : tokens.keySet()) {\n" +
+                "            tokensTypesAndRegexs.add(new Pair<String, String>(identificador, tokens.get(identificador)));\n" +
+                "        }\n\n";
+
 
         // 2) Keywords
         Set<String> palabrasReservadas = palabrasReservadasRegex.keySet();
@@ -1763,19 +1859,38 @@ public class CocolRReader {
         }
 
         // 3) Whitespace
-        if (whitespace.size() > 0){
-            programa += "        tokensTypesAndRegexs.add(new Pair<String, String>(\"whitespace\", \"";
-            for (int i = 0; i < whitespace.size(); i++) {
-                String palabra = whitespace.get(i);
-                if (i < whitespace.size() - 1){
-                    programa += "(" + palabra + ")|";
-                } else {
-                    programa += "(" + palabra + ")";
-                }
-            }
-            programa += "\"));\n";
-        }
+        // Serializar whitespace
+        out = new ObjectOutputStream(new FileOutputStream("whiteRegex.ser"));
+        out.writeObject(whitespace);
+        out.flush();
+        out.close();
 
+        programa += "\n" +
+                "        // Deserealizar el conjunto de whitespace\n" +
+                "        in = new ObjectInputStream(new FileInputStream(\"whiteRegex.ser\"));\n" +
+                "        ArrayList<String> whitespace = (ArrayList<String>) in.readObject();\n" +
+                "        in.close();\n" +
+                "\n";
+
+
+        // Agregar el regex del whitespace
+        programa += "\n" +
+                "        String myWhiteSpace = \"\";\n" +
+                "        if (whitespace.size() > 0){\n" +
+                "            for (int i = 0; i < whitespace.size(); i++) {\n" +
+                "                String palabra = whitespace.get(i);\n" +
+                "                if (i < whitespace.size() - 1){\n" +
+                "                    myWhiteSpace += \"(\" + palabra + \")|\";\n" +
+                "                } else {\n" +
+                "                    myWhiteSpace += \"(\" + palabra + \")\";\n" +
+                "                }\n" +
+                "            }\n" +
+                "\n" +
+                "            tokensTypesAndRegexs.add(new Pair<String, String>(\"whitespace\", myWhiteSpace));\n" +
+                "        } else {\n" +
+                "            myWhiteSpace = \"( )|(\" + (char)10 + \")|(\" + (char)10 + \")\";\n" +
+                "            tokensTypesAndRegexs.add(new Pair<String, String>(\"whitespace\", myWhiteSpace));\n" +
+                "        }\n";
 
         // Agregar precedencia a regex
         // 1) Keywords
@@ -1788,7 +1903,7 @@ public class CocolRReader {
 
         // 2) TOKENS
         programa += "\n\n        // Colocar precedencia a resto de tokens\n";
-        for (String tokenType : tokens) {
+        for (String tokenType : tokensKeysOrdered) {
             programa += "        tokenPrecedence.put(\"" + tokenType + "\", " + precedenceCounter + ");\n";
             precedenceCounter++;
         }
@@ -1807,81 +1922,74 @@ public class CocolRReader {
 
 
         // Metodos
-        programa += "\n" +
-                "\n\n" +
-                "    /**\n" +
-                "     * Funcion que tiene como objetivo reconocer el siguiente token de un programa ingresado\n" +
-                "     * @param tokens es el Arraylist donde se estan guardando todos los tokens del programa\n" +
-                "     * @param programa es el string que contiene todas las lineas del programa\n" +
-                "     * @param inicioLexema es desde donde se iniciara la busqueda de tokens nuevos\n" +
-                "     * @return 1) Actualiza el ArrayList de tokens. 2) Una tupla que contiene: - Si se encontro nu token (true/false) - El nuevo inicio Lexema\n" +
-                "     */\n" +
-                "    public Pair<Boolean, Integer> nextToken(ArrayList<Pair<String, String>> tokens, String programa, Integer inicioLexema) {\n" +
-                "        if (!(inicioLexema > programa.length())){\n" +
-                "            // Analizar programa\n" +
-                "            Pair<Integer, HashSet<DirectedGraph.NodeClass>> tokenInfo = simulador.simulateNFARecognizor(tokenAutomata, programa, funciones, inicioLexema);\n" +
+        programa +=
                 "\n" +
-                "            // Obtener fin de nuevo token\n" +
-                "            int finLexema = tokenInfo.getKey();\n" +
+                        "\n" +
+                        "    /**\n" +
+                        "     * Funcion que tiene como objetivo reconocer el siguiente token de un programa ingresado\n" +
+                        "     * @param tokens es el Arraylist donde se estan guardando todos los tokens del programa\n" +
+                        "     * @param programa es el string que contiene todas las lineas del programa\n" +
+                        "     * @param inicioLexema es desde donde se iniciara la busqueda de tokens nuevos\n" +
+                        "     * @return 1) Actualiza el ArrayList de tokens. 2) Una tupla que contiene: - Si se encontro nu token (true/false) - El nuevo inicio Lexema\n" +
+                        "     */\n" +
+                        "    public Pair<Boolean, Integer> nextToken(ArrayList<Pair<String, String>> tokens, String programa, Integer inicioLexema) {\n" +
+                        "        if (!(inicioLexema >= programa.length())){\n" +
+                        "            // Analizar programa\n" +
+                        "            Pair<Integer, DirectedGraph.NodeClass> tokenInfo = simulador.simulateNFARecognizor(tokenAutomata, programa, funciones, inicioLexema);\n" +
+                        "\n" +
+                        "            // Obtener fin de nuevo token\n" +
+                        "            int finLexema = tokenInfo.getKey();\n" +
+                        "\n" +
+                        "            // Obtener el tipo de token encontrado por medio de los estados finales alcanzados\n" +
+                        "            DirectedGraph.NodeClass estadoFinal = tokenInfo.getValue();\n" +
+                        "\n" +
+                        "            // Si sí se encontro una coincidencia\n" +
+                        "            if (estadoFinal != null){\n" +
+                        "                // Obtener el tipo de token\n" +
+                        "                String tokenType = estadoFinal.getTokenType();\n" +
+                        "\n" +
+                        "                if (!tokenType.equals(\"whitespace\")){\n" +
+                        "                    // Si es un token importante, se obtiene el lexema del programa\n" +
+                        "                    String lexema = programa.substring(inicioLexema, finLexema + 1);\n" +
+                        "\n" +
+                        "                    // Se actualiza el nuevo inicioLexema\n" +
+                        "                    inicioLexema = finLexema + 1;\n" +
+                        "\n" +
+                        "                    // Actualizar tokens\n" +
+                        "                    tokens.add(new Pair<String, String>(tokenType, lexema));\n" +
+                        "\n" +
+                        "                    // Devolver resultado\n" +
+                        "                    return new Pair<Boolean, Integer>(true, inicioLexema);\n" +
+                        "                }\n" +
+                        "\n" +
+                        "                // Si se encuentra un whitespace\n" +
+                        "                else {\n" +
+                        "                    // Volver a llamar al metodo, con un nuevo inicio\n" +
+                        "                    return nextToken(tokens, programa, finLexema + 1);\n" +
+                        "                }\n" +
+                        "\n" +
+                        "            } else {\n" +
+                        "                System.err.println(\"Error: Token no conocido <\" + programa.substring(inicioLexema, finLexema + 1) + \">\");\n" +
+                        "                return new Pair<Boolean, Integer>(false, finLexema + 1);\n" +
+                        "            }\n" +
+                        "\n" +
+                        "        } else {\n" +
+                        "            return new Pair<Boolean, Integer>(false, inicioLexema);\n" +
+                        "        }\n" +
+                        "    }\n" +
+                        "\n" +
+                        "\n" +
                 "\n" +
-                "            // Obtener el tipo de token encontrado por medio de los estados finales alcanzados\n" +
-                "            HashSet<DirectedGraph.NodeClass> estadosFinales = tokenInfo.getValue();\n" +
-                "\n" +
-                "            // Si sí se encontro una coincidencia\n" +
-                "            if (!estadosFinales.isEmpty()){\n" +
-                "                // Obtener el tipo de token encontrado\n" +
-                "                DirectedGraph.NodeClass estadoFinal = null;\n" +
-                "                int precedenciaAnterior = 100000;\n" +
-                "                int precedenciaActual;\n" +
-                "                for (DirectedGraph.NodeClass estadoActual : estadosFinales) {\n" +
-                "                    // Obtener precedencia del nuevo estado\n" +
-                "                    precedenciaActual = estadoActual.getPrecedence();\n" +
-                "\n" +
-                "                    if (precedenciaActual < precedenciaAnterior){\n" +
-                "                        // Solo el de precedencia mas pequena se quedara\n" +
-                "                        estadoFinal = estadoActual;\n" +
-                "                    }\n" +
-                "                }\n" +
-                "\n" +
-                "                // Obtener el tipo de token\n" +
-                "                if (estadoFinal != null){\n" +
-                "                    String tokenType = estadoFinal.getTokenType();\n" +
-                "                    if (!tokenType.equals(\"whitespace\")){\n" +
-                "                        // Si es un token importante, se obtiene el lexema del programa\n" +
-                "                        String lexema = programa.substring(inicioLexema, finLexema + 1);\n" +
-                "\n" +
-                "                        // Se actualiza el nuevo inicioLexema\n" +
-                "                        inicioLexema = finLexema + 1;\n" +
-                "\n" +
-                "                        // Actualizar tokens\n" +
-                "                        tokens.add(new Pair<String, String>(tokenType, lexema));\n" +
-                "\n" +
-                "                        // Devolver resultado\n" +
-                "                        return new Pair<Boolean, Integer>(true, inicioLexema);\n" +
-                "                    }\n" +
-                "\n" +
-                "                    // Si se encuentra un whitespace\n" +
-                "                    else {\n" +
-                "                        // Volver a llamar al metodo, con un nuevo inicio\n" +
-                "                        return nextToken(tokens, programa, finLexema + 1);\n" +
-                "                    }\n" +
-                "\n" +
-                "                } else {\n" +
-                "                    // Esto nunca va a pasar\n" +
-                "                    System.err.println(\"Error: Tipo de token NULO.\");\n" +
-                "                    return new Pair<Boolean, Integer>(false, finLexema + 1);\n" +
-                "                }\n" +
-                "\n" +
-                "            } else {\n" +
-                "                System.err.println(\"Error: Token no conocido <\" + programa.substring(inicioLexema, finLexema + 1) + \">\");\n" +
-                "                return new Pair<Boolean, Integer>(false, finLexema + 1);\n" +
-                "            }\n" +
-                "\n" +
-                "        } else {\n" +
-                "            return new Pair<Boolean, Integer>(false, inicioLexema);\n" +
+                "    \n" +
+                "    private String charToString(char[] charArray){\n" +
+                "        String result = \"\";\n" +
+                "        for (int i = 0; i < charArray.length; i++) {\n" +
+                "            result += charArray[i];\n" +
                 "        }\n" +
+                "        return result;\n" +
                 "    }\n" +
-                "\n\n" +
+                "\n" +
+                "\n" +
                 "    private void generateTokenIdentificatorAutomata(){\n" +
                 "        // Funcion de crear automatas\n" +
                 "        RegExToNFA regExToNFA = new RegExToNFA();\n" +

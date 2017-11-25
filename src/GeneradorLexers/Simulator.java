@@ -2,6 +2,7 @@ package GeneradorLexers;
 
 import javafx.util.Pair;
 
+import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Stack;
 
@@ -11,7 +12,7 @@ import java.util.Stack;
  * @version 1.0
  * @since 5/08/207
  */
-public class Simulator {
+public class Simulator  implements Serializable {
 
     /**
      * Constructor
@@ -56,7 +57,7 @@ public class Simulator {
      * @param inicioLexema indica el inicio del lexema a encontrar
      * @return devuelve un par, siendo el primer valor el final del lexema y el otroun conjunto de estados finales.
      */
-    public Pair<Integer, HashSet<DirectedGraph.NodeClass>> simulateNFARecognizor(DirectedGraph nfa, String programa, NFAToDFA nfaToDFA, int inicioLexema){
+    public Pair<Integer, DirectedGraph.NodeClass> simulateNFARecognizor(DirectedGraph nfa, String programa, NFAToDFA nfaToDFA, int inicioLexema){
         // Crear historial de conjunto de estados
         Stack<HashSet<DirectedGraph.NodeClass>> statesHistorial = new Stack<HashSet<DirectedGraph.NodeClass>>();
 
@@ -71,6 +72,7 @@ public class Simulator {
 
         // Iniciar simulación
         char c;
+        DirectedGraph.NodeClass accNode;
         while (!currentStates.isEmpty()) {
             // Guardar conjunto de estados anterior
             statesHistorial.push(currentStates);
@@ -82,44 +84,55 @@ public class Simulator {
                 // Moverse hacia siguiente conjunto de estados
                 currentStates = nfaToDFA.moveT(currentStates, String.valueOf(c));
             } else {
+                i++;
                 break;
             }
             i++;
         }
 
-        // Verificar los conjuntos de estados finales en historial
-        boolean finalFound = false;
-        HashSet<DirectedGraph.NodeClass> estadosFinales = new HashSet<DirectedGraph.NodeClass>();
-        while (!finalFound){
-            // Terminar ciclo si ya se revisaron todos los conjuntos del historial
-            if (statesHistorial.isEmpty()){
-                break;
+        // Verificar el ultimo conjunto de estados del historial
+        currentStates = statesHistorial.pop();
+        accNode = getAcceptanceNode(currentStates);
+        i -= 2; // Regresar a final de lexema
+
+
+        // Verificar si despues existe un whitespace o el fin de la entrada
+        if (i + 1 < programa.length()) {
+            if (!accNode.getTokenType().equals("whitespace")){
+                DirectedGraph.NodeClass accNode2;
+                c = programa.charAt(i + 1);
+
+
+                // Si aun no ha terminado de leer el programa, buscar un whitespace
+                currentStates = nfaToDFA.moveT(nfaToDFA.getEClosure(nodoInicial), String.valueOf(c));
+                accNode2 = getAcceptanceNode(currentStates);
+
+                if (!accNode2.getTokenType().equals("whitespace")){
+                    System.err.println("Error: Se ha encontrado un token no valido.");
+                    return new Pair<Integer, DirectedGraph.NodeClass>(i + 1, null);
+                }
             }
+        }
+        return new Pair<Integer, DirectedGraph.NodeClass>(i, accNode);
+    }
 
-            // Obtener el ultimo conjunto de estados
-            currentStates = statesHistorial.pop();
+    public DirectedGraph.NodeClass getAcceptanceNode(HashSet<DirectedGraph.NodeClass> conjunto){
+        // Conjunto de estados finales encontrados
+        DirectedGraph.NodeClass estadoFinal = null;
+        int precedenciaActual = 1000000;
 
-            // Revisar todos los estados y ver si hay uno final
-            for (DirectedGraph.NodeClass estado : currentStates) {
-                if (estado.isFinal()){
-                    // Ya no regresar mas en el historial
-                    finalFound = true;
-
-                    // Agregar estado final a conjunto de estados finales
-                    estadosFinales.add(estado);
+        // Revisar todos los estados y ver si hay uno final
+        for (DirectedGraph.NodeClass estado : conjunto) {
+            if (estado.isFinal()){
+                // Verificar si tiene menor precedencia que el anterior
+                if (estado.getPrecedence() < precedenciaActual){
+                    estadoFinal = estado;
+                    precedenciaActual = estado.getPrecedence();
                 }
             }
         }
 
-        // Actualizar variable finLexema dependiendo si encontro final
-        int finLexema;
-        if (finalFound){
-            finLexema = inicioLexema + statesHistorial.size() - 1;
-        } else {
-            finLexema = i - 1;
-        }
-
-        return new Pair<Integer, HashSet<DirectedGraph.NodeClass>>(finLexema, estadosFinales);
+        return estadoFinal;
     }
 
 

@@ -1,16 +1,21 @@
 package GeneradorLexers;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Stack;
 
-public class Grammar {
+public class Grammar implements Serializable{
 
     private ArrayList<String> terminals, nonTerminals;
     private HashMap<String, ArrayList<String>> productions;  // <No-terminal, producciones>
+    private HashMap<String, ArrayList<Item>> augProductions;
     private HashMap<String, HashSet<String>> follow, first;  // <No-terminal, next terminal>
     private HashSet<String> symbols;
-    private String initialNonTerminal;
+    private String initialNonTerminal, initialNonTerminalAug;
+    private HashMap<Item, HashSet<Item>> closureItem;
+    private int names;
 
     Grammar() {
         this.productions = new HashMap<String, ArrayList<String>>();
@@ -19,6 +24,8 @@ public class Grammar {
         this.follow = new HashMap<String, HashSet<String>>();
         this.first = new HashMap<String, HashSet<String>>();
         this.symbols = new HashSet<String>();
+        closureItem = new HashMap<Item, HashSet<Item>>();
+        names = 0;
     }
 
     /**
@@ -135,9 +142,14 @@ public class Grammar {
                     if (subFirst != null){
                         first.addAll(subFirst);
                     } else {
-                        subFirst = calculateFirst(symbol);
-                        this.first.put(symbol, subFirst);
-                        first.addAll(subFirst);
+                        // Asegurarse que no se calcula al mismo first si ya se esta calculando
+                        if (!nonTerminal.equals(symbol)){
+                            subFirst = calculateFirst(symbol);
+                            this.first.put(symbol, subFirst);
+                            first.addAll(subFirst);
+                        } else {
+                            subFirst = new HashSet<String>();
+                        }
                     }
 
                     producesEpsilon = subFirst.contains("\"\"");
@@ -286,12 +298,13 @@ public class Grammar {
         boolean seAgregoAlgo = true;
         if (mustHave.size() > 0){
             while (seAgregoAlgo){
+                seAgregoAlgo = false;
                 for (String[] par : mustHave) {
                     // Obtener follow de cabeza
                     HashSet<String> followCabeza = this.follow.get(par[0]);
 
                     // Copiar follow de cabeza a no-terminal y ver si se agrego algo nuevo
-                    seAgregoAlgo = this.follow.get(par[1]).addAll(followCabeza);
+                    seAgregoAlgo = this.follow.get(par[1]).addAll(followCabeza) || seAgregoAlgo;
                 }
             }
         }
@@ -319,5 +332,272 @@ public class Grammar {
         }
     }
 
+    /**
+     * Devuelve el conjunto de items que se pueden alcanzar desde un item. Este metodo NO devuelve el item que lo
+     * origina.
+     * @param item es el item inicial desde el que se desarrollan los otros
+     * @param set es el conjunto resultado que se ira pasando por cada llamada recursiva
+     * @return devuelve el conjunto de items alcanzados por el item inicial
+     */
+    public HashSet<Item> closure(Item item, HashSet<Item> set){
+        // Obtener el elemento despues del punto
+        String siguienteNoTerminal = item.getNext();
+        Item itemTemp;
 
+        // Si el siguiente elemento despues del punto es un no terminal1:
+        if (nonTerminals.contains(siguienteNoTerminal) && !siguienteNoTerminal.equals(item.getHead())){
+            // Obtener las producciones del no terminal
+            ArrayList<String> producciones = productions.get(siguienteNoTerminal);
+
+            // Crear un item nuevo por cada produccion del no terminal y agregar su closure
+            for (String produccion : producciones) {
+                itemTemp = new Item(siguienteNoTerminal, produccion.trim().split(" "), 0);
+                set.add(itemTemp);  // Agregar un item punto inicial
+                set.addAll(closure(itemTemp, new HashSet<Item>()));  // Agregar el closure del item nuevo
+            }
+
+            return set;
+
+        } else {
+            // Si es un no terminal, devolver el conjunto que se lleva hasta ahora
+            return set;
+        }
+    }
+
+    /**
+     * Devuelve el closure para un kernel, no incluye a los elementos del kernel
+     * @param ker es el kernel del que se quiere obtener el closure
+     * @return devuelve un conjunto de items
+     */
+    public HashSet<Item> closureKernel(PDFA.Kernel ker){
+        HashSet<Item> result = new HashSet<Item>();
+        for (Item it : ker.getKernels()) {
+            result.addAll(closure(it, result));
+        }
+        return result;
+    }
+
+    /**
+     * Metodo para obtner el estado al que se mueve un automata segun su actual estado y un input
+     * @param automata el automata que esta siendo creado
+     * @param actualState es el estado origen
+     * @param input es la entrada bajo la que se produciria la transicion
+     * @param toAnalize
+     * @return devuelve un estado nuevo (y se agrega de un solo al automata) o devuelve un estado ya existente
+     */
+    public PDFA.NodeClass goTo(PDFA automata, PDFA.NodeClass actualState, String input, Stack<PDFA.NodeClass> toAnalize){
+        // Posible nuevo kernel para el nuevo estado
+        PDFA.Kernel newKernel = null;
+        boolean coincidence = false;
+
+        // Buscar todos los items que coinciden con input en actualState y crear posible nuevo kernel
+        // Kernel
+        for (Item kernel: actualState.kernel.getKernels()) {
+            // Si coincide con la entrada
+            if (kernel.getNext().equals(input)){
+                // Agregar a nuevo posible kernel
+                if (newKernel == null){
+                    newKernel = new PDFA.Kernel(new Item(kernel.getHead(), kernel.getBody(), kernel.getDot() + 1));
+                    coincidence = true;
+                } else {
+                    newKernel.addKernel(new Item(kernel.getHead(), kernel.getBody(), kernel.getDot() + 1));
+                }
+            }
+        }
+
+        // Items
+        for (Item it: actualState.items) {
+            // Si coincide con la entrada
+            if (it.getNext().equals(input)){
+                // Agregar a nuevo posible kernel
+                if (newKernel == null){
+                    coincidence = true;
+                    newKernel = new PDFA.Kernel(new Item(it.getHead(), it.getBody(), it.getDot() + 1));
+                } else {
+                    newKernel.addKernel(new Item(it.getHead(), it.getBody(), it.getDot() + 1));
+                }
+            }
+        }
+
+        // Si se encontro una coincidencia
+        if (coincidence){
+            // Verificar si el kernel ya existe en el automata siendo creado
+            if (automata.containsKernel(newKernel)){
+                return automata.getStateByKernel(newKernel);  // Devolver estado existente
+            } else {
+                // Crear nuevo estado y devolverlo
+                automata.addNode(automata, getNewName(), false, newKernel.isFinal(), newKernel, closureKernel(newKernel));
+                toAnalize.push(automata.getStateByKernel(newKernel));
+                return toAnalize.peek();  // Devolver estado existente
+            }
+        } else {
+            return null;  // Si no existe coincidencia
+        }
+    }
+
+
+    public PDFA createLR0(){
+        // Stack para aplicar goto a estado en todos sus items
+        Stack<PDFA.NodeClass> toAnalize = new Stack<PDFA.NodeClass>();
+
+        // Crear nuevo automata vacio
+        PDFA lr0 = new PDFA();
+
+        // Aumentar gramatica
+        augmentateGrammar();
+
+        // Inializar automata con produccion inicial aumentada
+        PDFA.Kernel newKernel = new PDFA.Kernel(new Item(initialNonTerminalAug, productions.get(initialNonTerminalAug).get(0).trim().split(" "), 0));
+        lr0.addNode(lr0, getNewName(), true, newKernel.isFinal(), newKernel, closureKernel(newKernel));
+
+        // Por cada item (contando kernels) hacer un goto con el elemento despues del punto
+        PDFA.NodeClass nodoInicial = lr0.getStateByKernel(newKernel);
+        toAnalize.push(nodoInicial);
+
+        PDFA.NodeClass actualState;
+        while (!toAnalize.empty()){
+            actualState = toAnalize.pop();
+            HashSet<String> inputs = actualState.nextElements;  // Elementos que producen una transicion
+
+            for (String input : inputs) {
+                if (!input.equals("")){
+                    PDFA.NodeClass nuevoEstado = goTo(lr0, actualState, input, toAnalize);
+                    // Si existe la transicion agregarla al automata
+                    if (nuevoEstado != null){
+                        lr0.addEdges(lr0, actualState, nuevoEstado, input, terminals.contains(input));
+                    }
+                }
+            }
+        }
+
+        // Guardar la gramatica que creo el automata
+        lr0.setGrammar(this);
+        return lr0;
+    }
+
+
+    /**
+     * Clase que agrega una nueva produccion inicial al conjunto de producciones de la gramatica.
+     */
+    public void augmentateGrammar(){
+        // Calcular first y follow antes de aumentar
+        if (follow.size() == 0){
+            calculateFollows();
+        }
+
+        // Agregar la nueva produccion
+        initialNonTerminalAug = initialNonTerminal + "Aug";  // Crear nuevo no-termianl inicial
+        productions.put(initialNonTerminalAug, new ArrayList<String>());  // Initialize augmented initial production
+        productions.get(initialNonTerminalAug).add(initialNonTerminal + " $");  // Agregar simbolo aumentado
+        symbols.add("$");
+        terminals.add("$");
+    }
+
+    public int getNewName(){
+        int result = names;
+        names++;
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Grammar{" +
+                "productions=" + productions +
+                '}';
+    }
+
+    public boolean parse(ArrayList<String> input, PDFA automata){
+        input.add("$");  // Agregar caracter de final
+        PDFA.TableSLR tableSLR = automata.getTableSLR();
+        Stack<Integer> stack = new Stack<Integer>();
+        stack.push(automata.getOneInicialNode().id);  // Agregar primer estado
+        Stack<String> symbols = new Stack<String>();  // Lo que se lleva leido
+        String nextInput;
+        int actualState;
+        String[] action;
+        PDFA.Kernel produccion;
+        Item produccionItem;
+        while (!stack.empty()){
+            nextInput = input.get(0);  // Siguiente token a leer
+            actualState = stack.peek();
+            action = tableSLR.getAction(actualState, nextInput);
+
+            // Si no existe la transicion
+            if (action == null){
+                System.err.println("Error: No se puede avanzar si el presente token es: " + symbols.peek() +
+                " y el siguiente: " + input.get(0));
+                return false;
+            }
+
+            // Si se debe realizar un shift
+            else if (action[0].equals("S")){
+                stack.push(Integer.valueOf(action[1]));  // Pushear el siguiente estado
+                symbols.push(nextInput);
+                input.remove(0);
+            }
+
+            else if (action[0].equals("R")){
+                // Obtener produccion para reduccion
+                produccion = automata.getNodeMap().get(Integer.valueOf(action[1])).kernel;
+                produccionItem = produccion.getFinalItem();
+
+                for (int i = 0; i < produccionItem.getBody().size(); i++) {
+                    symbols.pop();  // Eliminar symbolos segun largo del cuerpo de produccion
+                    stack.pop();
+                }
+
+                // Agregar nuevo simbolo
+                symbols.push(produccionItem.getHead());
+
+                // Determinar siguiente estado
+                stack.push(Integer.valueOf(tableSLR.getAction(stack.peek(), symbols.peek())[1]));
+            }
+
+            else if (action[0].equals("ACC")){
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public ArrayList<String> getTerminals() {
+        return terminals;
+    }
+
+    public void setTerminals(ArrayList<String> terminals) {
+        this.terminals = terminals;
+    }
+
+    public ArrayList<String> getNonTerminals() {
+        return nonTerminals;
+    }
+
+    public void setNonTerminals(ArrayList<String> nonTerminals) {
+        this.nonTerminals = nonTerminals;
+    }
+
+    public HashMap<String, HashSet<String>> getFollow() {
+        return follow;
+    }
+
+    public void setFollow(HashMap<String, HashSet<String>> follow) {
+        this.follow = follow;
+    }
+
+    public HashSet<String> getSymbols() {
+        return symbols;
+    }
+
+    public void setSymbols(HashSet<String> symbols) {
+        this.symbols = symbols;
+    }
+
+    public int getNames() {
+        return names;
+    }
+
+    public void setNames(int names) {
+        this.names = names;
+    }
 }

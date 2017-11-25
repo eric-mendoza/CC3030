@@ -1,5 +1,6 @@
 package GeneradorLexers;
 
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -9,7 +10,7 @@ import java.util.*;
  * @since 23/07/207
  * Para esta clase se utilizo otra como guia, obtenida de https://gist.github.com/gmenard/6161825
  */
-public class RegExConverter {
+public class RegExConverter  implements Serializable {
 
     /** Operators precedence map. */
     private static final Map<Character, Integer> precedenceMap;
@@ -98,10 +99,14 @@ public class RegExConverter {
                     break;
 
                 case ')':
-                    while (!stack.peek().equals('(')) {
-                        postfix += stack.pop();
+                    if (!stack.isEmpty()){
+                        while (!stack.peek().equals('(')) {
+                            postfix += stack.pop();
+                        }
+                        stack.pop();
+                    } else {
+                        stack.push(c);
                     }
-                    stack.pop();
                     break;
 
                 case '\\':

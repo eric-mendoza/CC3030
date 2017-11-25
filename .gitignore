@@ -1,6 +1,9 @@
 *.class
 *.txt
 *.xml
+*.ser
+*.iml
+.idea
 Lexer.java
 .idea/copyright/
 .idea/libraries/
