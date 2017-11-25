@@ -29,15 +29,19 @@ public class CompilerMain {
         Grammar grammar = (Grammar) in.readObject();
         in.close();
 
-        // Calcular lr0
-        grammar.setNames(0);
-        PDFA lr0 = grammar.createLR0();
-        lr0.createSLRTable();
-        lr0.createDescriptionDocument();
-        if (grammar.parse(foundTokens, lr0)){
-            System.out.println("Parseo exitoso.");
+        if (foundTokens.size() > 0){
+            // Calcular lr0
+            grammar.setNames(0);
+            PDFA lr0 = grammar.createLR0();
+            lr0.createSLRTable();
+            lr0.createDescriptionDocument();
+            if (grammar.parse(foundTokens, lr0)){
+                System.out.println("Parseo exitoso.");
+            } else {
+                System.err.println("Se encontraron errores en el programa ingresado.");
+            }
         } else {
-            System.err.println("Se encontraron errores en el programa ingresado.");
+            System.err.println("No se identificó ningún token.");
         }
 
     }

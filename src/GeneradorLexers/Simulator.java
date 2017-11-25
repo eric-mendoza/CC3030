@@ -107,8 +107,13 @@ public class Simulator  implements Serializable {
                 currentStates = nfaToDFA.moveT(nfaToDFA.getEClosure(nodoInicial), String.valueOf(c));
                 accNode2 = getAcceptanceNode(currentStates);
 
-                if (!accNode2.getTokenType().equals("whitespace")){
-                    System.err.println("Error: Se ha encontrado un token no valido.");
+                if (accNode2 != null){
+                    if (!accNode2.getTokenType().equals("whitespace")){
+                        System.err.println("Error: Despues de " + accNode.getTokenType() + " se esperaba whitespace, no " + accNode2.getTokenType() + ".");
+                        return new Pair<Integer, DirectedGraph.NodeClass>(i + 1, null);
+                    }
+                } else {
+                    System.err.println("Error: Despues de " + accNode.getTokenType() + " se encontró un token no identificado.");
                     return new Pair<Integer, DirectedGraph.NodeClass>(i + 1, null);
                 }
             }

@@ -2,6 +2,7 @@ package GeneradorLexers;
 
 import javafx.util.Pair;
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -32,6 +33,7 @@ public class CocolRReader implements Serializable{
     private DirectedGraph identAutomata = createAutomaton(identRegex);
     private NFAToDFA idenNFAToDFA = new NFAToDFA();
     private String lexerJavaFileName;
+    private HashSet<String> operadoresNFA = new HashSet<String>();
 
     /**
      * Guardar los patrones de cada seccion en hashmaps
@@ -67,6 +69,10 @@ public class CocolRReader implements Serializable{
      * @return True, si la sintax es correcta; False, si existen errores
      */
     public boolean analizeCocolRSyntax(String filename){
+        // Operadores
+        String[] op = {"+", "|", "*", "?"};
+        operadoresNFA.addAll(Arrays.asList(op));
+
         // Regex mas basicos
         String ANY = "(\u0001)|(\u0002)|(\u0003)|(\u0004)|(\u0005)|(\u0006)|(\u0007)" +
                 "|\u000E|\u000F|\u0010|\u0011|\u0012|\u0013|\u0014|\u0015|\u0016|\u0017|\u0018|\u0019|\u001A|\u001B|\u001C|\u001D|\u001E|\u001F|( )|(\\!)|\"|#|$|%|&|'|(\\()|(\\))|(\\*)|(\\+)|,|-|(\\.)|/|0|1|2|3|4|5|6|7|8|9|:|;|<|=|>|(\\?)|@|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z|[|(\\\\)|]|^|_|`|a|b|c|d|e|f|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|{|(\\|)|}|~" +
@@ -814,9 +820,20 @@ public class CocolRReader implements Serializable{
                 case '\'':
                     // Avanzar al contenido del char
                     i--;
+                    String newSubChar = "";
+                    char newChar = futureRegex[i];
+
+                    // Verificar cual es el siguiente-siguiente elemento
+                    char next = futureRegex[i - 1];
+                    if (next == '\\' && futureRegex[i - 2] == '\'') {
+                        newSubChar += '\\';
+                        i--;
+                    }
 
                     // Obtener el contenido
-                    newRegex = String.valueOf(futureRegex[i]);
+                    newSubChar += String.valueOf(newChar);
+
+                    newRegex += getChar(newSubChar);
 
                     // Avanzar uno más para consumir la segunda comilla
                     i--;
@@ -949,6 +966,16 @@ public class CocolRReader implements Serializable{
         return new Pair<Integer, String>(0, newRegex);
     }
 
+    private String getChar(String newSubChar) {
+        if (newSubChar.length() == 1) return newSubChar;
+        else if (newSubChar.equals("\\n")) return "\n";
+        else if (newSubChar.equals("\\t")) return "\t";
+        else if (newSubChar.equals("\\r")) return "\r";
+        else {
+            return newSubChar;
+        }
+    }
+
 
     private String identifyTokenRegex(String tokenExpr, String tokenIdent) {
         // Examinar sintax
@@ -1004,6 +1031,7 @@ public class CocolRReader implements Serializable{
                 case '\'':
                     i++;
                     chr = tokenExpr.charAt(i);
+                    if (operadoresNFA.contains(String.valueOf(chr))) newRegex += '\\';
                     // Verificar caracteres de escape
                     if(chr == '\\'){
                         if (tokenExpr.charAt(i + 2) != '\''){
